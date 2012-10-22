@@ -1,8 +1,8 @@
 A collection of utillities
 
-licensed under AGPL V 3
+licensed under Apache 2.0
 
-built with maven 2.x:
+built with maven 3.x:
 
 	cd <project root>
 	mvn clean install
