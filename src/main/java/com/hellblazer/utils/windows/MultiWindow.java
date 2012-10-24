@@ -14,18 +14,52 @@
  */
 package com.hellblazer.utils.windows;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 /**
  * A simple ring buffer for storing windows of samples of multiple variables.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class MultiWindow {
+public class MultiWindow implements Iterable<double[]> {
+
+    private class It implements Iterator<double[]> {
+        private int index = 0;
+
+        /* (non-Javadoc)
+         * @see java.util.Iterator#hasNext()
+         */
+        @Override
+        public boolean hasNext() {
+            return index < count;
+        }
+
+        /* (non-Javadoc)
+         * @see java.util.Iterator#next()
+         */
+        @Override
+        public double[] next() {
+            if (index == count) {
+                throw new NoSuchElementException();
+            }
+            return samples[(index++ + head) % samples.length];
+        }
+
+        /* (non-Javadoc)
+         * @see java.util.Iterator#remove()
+         */
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
 
     protected int              count = 0;
-    private int                head  = 0;
+    protected int              head  = 0;
     protected final double[][] samples;
-    private int                tail  = 0;
+    protected int              tail  = 0;
 
     public MultiWindow(int windowSize, int numVariables) {
         samples = new double[windowSize][numVariables];
@@ -35,6 +69,14 @@ public class MultiWindow {
         samples[tail] = value;
         tail = (tail + 1) % samples.length;
         count++;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Iterable#iterator()
+     */
+    @Override
+    public Iterator<double[]> iterator() {
+        return new It();
     }
 
     public double[] removeFirst() {
