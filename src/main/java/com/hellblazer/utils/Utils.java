@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 
 /**
  * 
@@ -69,6 +72,39 @@ public class Utils {
         }
         field.setAccessible(true);
         return field.get(target);
+    }
+
+    /**
+     * Find a free port for any local address
+     * 
+     * @return the port number or -1 if none available
+     */
+    public static int allocatePort() {
+        return allocatePort(null);
+    }
+
+    /**
+     * Find a free port on the interface with the given local address
+     * 
+     * @return the port number or -1 if none available
+     */
+    public static int allocatePort(InetAddress host) {
+        InetSocketAddress address = new InetSocketAddress(host, 0);
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket();
+            socket.bind(address);
+            return socket.getLocalPort();
+        } catch (IOException e) {
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+        return -1;
     }
 
     public static void copy(File sourceFile, File destFile) throws IOException {
