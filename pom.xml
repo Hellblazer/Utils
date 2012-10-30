@@ -6,6 +6,26 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Common Utilities</name>
 
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Hal Hildebrand</name>
+			<email>hal.hildebrand@me.com</email>
+			<organization>Hellbound Productions</organization>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>git://github.com/Hellblazer/Utils.git</connection>
+		<url>https://github.com/Hellblazer/Utils</url>
+	</scm>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -22,7 +42,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
