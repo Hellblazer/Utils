@@ -6,3 +6,20 @@ built with maven 3.x:
 
 	cd <project root>
 	mvn clean install
+	
+### Maven configuration
+
+include the hellblazer snapshot repository:
+
+    <repository>
+        <id>hellblazer-snapshots</id>
+        <url>https://repository-hal900000.forge.cloudbees.com/snapshot/</url>
+    </repository>
+    
+add as dependency:
+
+    <dependency>
+        <groupId>com.hellblazer</groupId>
+        <artifactId>utils</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </dependency>
