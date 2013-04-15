@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.channels.ClosedChannelException;
 
 /**
  * 
@@ -185,6 +186,12 @@ public class Utils {
 
 	public static void initializeDirectory(String dir) {
 		initializeDirectory(new File(dir));
+	}
+
+	public static boolean isClose(IOException ioe) {
+		return ioe instanceof ClosedChannelException
+				|| "Broken pipe".equals(ioe.getMessage())
+				|| "Connection reset by peer".equals(ioe.getMessage());
 	}
 
 	public static void remove(File directory) {

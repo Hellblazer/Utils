@@ -1,4 +1,4 @@
-/** (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
+/** (C) Copyright 2013 Hal Hildebrand, All Rights Reserved
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,82 +14,77 @@
  */
 package com.hellblazer.utils;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.hellblazer.utils.collections.RingBuffer;
 
 /**
- * A thread safe pool for byte buffers. Keeps statistics and shit.
+ * @author hhildebrand
+ *
+ */
+/**
+ * A thread safe pooling implementation. Keeps statistics on what shit be
+ * happening.
  * 
  * @author hhildebrand
  * 
  */
-public class ByteBufferPool {
+public class Pool<T> {
+	public interface Clearable {
+		void clear();
+	}
 
-	private int bytesAllocated = 0;
+	public interface Factory<T> {
+		T newInstance(Pool<T> pool);
+	}
+
+	private final ReentrantLock lock = new ReentrantLock();
 	private int created = 0;
 	private int discarded = 0;
-	private final ReentrantLock lock = new ReentrantLock();
+	private final Factory<T> factory;
 	private final String name;
-	private final RingBuffer<ByteBuffer> pool;
+	private final RingBuffer<T> pool;
 	private int pooled = 0;
 	private int reused = 0;
 
-	public ByteBufferPool(String name, int limit) {
+	public Pool(String name, Factory<T> factory, int limit) {
 		this.name = name;
-		pool = new RingBuffer<ByteBuffer>(limit);
+		pool = new RingBuffer<T>(limit);
+		this.factory = factory;
 	}
 
-	public ByteBuffer allocate(int capacity) {
+	public T allocate() {
 		final ReentrantLock myLock = lock;
 		myLock.lock();
 		try {
-			if (pool.isEmpty()) {
+			T allocated = pool.poll();
+			if (allocated == null) {
 				created++;
-				bytesAllocated += capacity;
-				return ByteBuffer.allocate(capacity);
+				allocated = factory.newInstance(this);
+			} else {
+				reused++;
 			}
-			int remaining = pool.size();
-			while (remaining != 0) {
-				ByteBuffer allocated = pool.poll();
-				if (allocated.capacity() >= capacity) {
-					reused++;
-					allocated.rewind();
-					allocated.limit(capacity);
-					return allocated;
-				}
-				pool.add(allocated);
-				remaining--;
-			}
-			created++;
-			bytesAllocated += capacity;
-			return ByteBuffer.allocate(capacity);
+			return allocated;
 		} finally {
 			myLock.unlock();
 		}
 	}
 
-	public void free(ByteBuffer free) {
+	public void free(T free) {
 		final ReentrantLock myLock = lock;
 		myLock.lock();
 		try {
 			if (!pool.offer(free)) {
 				discarded++;
 			} else {
-				free.clear();
 				pooled++;
+				if (free instanceof Clearable) {
+					((Clearable) free).clear();
+				}
 			}
 		} finally {
 			myLock.unlock();
 		}
-	}
-
-	/**
-	 * @return the bytesAllocated
-	 */
-	public int getBytesAllocated() {
-		return bytesAllocated;
 	}
 
 	/**
@@ -117,13 +112,6 @@ public class ByteBufferPool {
 		return pooled;
 	}
 
-	/**
-	 * @return the reused
-	 */
-	public int getReused() {
-		return reused;
-	}
-
 	public int size() {
 		return pool.size();
 	}
@@ -131,8 +119,7 @@ public class ByteBufferPool {
 	@Override
 	public String toString() {
 		return String
-				.format("Pool[%s] bytes allocated: %s size: %s reused: %s created: %s pooled: %s discarded: %s",
-						name, bytesAllocated, size(), reused, created, pooled,
-						discarded);
+				.format("Pool[%s] size: %s reused: %s created: %s pooled: %s discarded: %s",
+						name, size(), reused, created, pooled, discarded);
 	}
 }
