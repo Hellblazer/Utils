@@ -35,181 +35,194 @@ import java.net.ServerSocket;
 
 public class Utils {
 
-    public static Object accessField(String fieldName, Object target)
-                                                                     throws SecurityException,
-                                                                     NoSuchFieldException,
-                                                                     IllegalArgumentException,
-                                                                     IllegalAccessException {
-        Field field;
-        try {
-            field = target.getClass().getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            Class<?> superClass = target.getClass().getSuperclass();
-            if (superClass == null) {
-                throw e;
-            }
-            return accessField(fieldName, target, superClass);
-        }
-        field.setAccessible(true);
-        return field.get(target);
-    }
+	public static Object accessField(String fieldName, Object target)
+			throws SecurityException, NoSuchFieldException,
+			IllegalArgumentException, IllegalAccessException {
+		Field field;
+		try {
+			field = target.getClass().getDeclaredField(fieldName);
+		} catch (NoSuchFieldException e) {
+			Class<?> superClass = target.getClass().getSuperclass();
+			if (superClass == null) {
+				throw e;
+			}
+			return accessField(fieldName, target, superClass);
+		}
+		field.setAccessible(true);
+		return field.get(target);
+	}
 
-    public static Object accessField(String fieldName, Object target,
-                                     Class<?> targetClass)
-                                                          throws SecurityException,
-                                                          NoSuchFieldException,
-                                                          IllegalArgumentException,
-                                                          IllegalAccessException {
-        Field field;
-        try {
-            field = targetClass.getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            Class<?> superClass = targetClass.getSuperclass();
-            if (superClass == null) {
-                throw e;
-            }
-            return accessField(fieldName, target, superClass);
-        }
-        field.setAccessible(true);
-        return field.get(target);
-    }
+	public static Object accessField(String fieldName, Object target,
+			Class<?> targetClass) throws SecurityException,
+			NoSuchFieldException, IllegalArgumentException,
+			IllegalAccessException {
+		Field field;
+		try {
+			field = targetClass.getDeclaredField(fieldName);
+		} catch (NoSuchFieldException e) {
+			Class<?> superClass = targetClass.getSuperclass();
+			if (superClass == null) {
+				throw e;
+			}
+			return accessField(fieldName, target, superClass);
+		}
+		field.setAccessible(true);
+		return field.get(target);
+	}
 
-    /**
-     * Find a free port for any local address
-     * 
-     * @return the port number or -1 if none available
-     */
-    public static int allocatePort() {
-        return allocatePort(null);
-    }
+	/**
+	 * Find a free port for any local address
+	 * 
+	 * @return the port number or -1 if none available
+	 */
+	public static int allocatePort() {
+		return allocatePort(null);
+	}
 
-    /**
-     * Find a free port on the interface with the given local address
-     * 
-     * @return the port number or -1 if none available
-     */
-    public static int allocatePort(InetAddress host) {
-        InetSocketAddress address = new InetSocketAddress(host, 0);
-        ServerSocket socket = null;
-        try {
-            socket = new ServerSocket();
-            socket.bind(address);
-            return socket.getLocalPort();
-        } catch (IOException e) {
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                }
-            }
-        }
-        return -1;
-    }
+	/**
+	 * Find a free port on the interface with the given local address
+	 * 
+	 * @return the port number or -1 if none available
+	 */
+	public static int allocatePort(InetAddress host) {
+		InetSocketAddress address = new InetSocketAddress(host, 0);
+		ServerSocket socket = null;
+		try {
+			socket = new ServerSocket();
+			socket.bind(address);
+			return socket.getLocalPort();
+		} catch (IOException e) {
+		} finally {
+			if (socket != null) {
+				try {
+					socket.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+		return -1;
+	}
 
-    public static void copy(File sourceFile, File destFile) throws IOException {
-        InputStream is = new FileInputStream(sourceFile);
-        OutputStream os = new FileOutputStream(destFile);
-        // Copy the bits from instream to outstream
-        copy(is, os);
+	public static void copy(File sourceFile, File destFile) throws IOException {
+		copy(sourceFile, destFile, 4096);
+	}
 
-    }
+	public static void copy(File sourceFile, File destFile, byte[] buffer)
+			throws IOException {
+		InputStream is = new FileInputStream(sourceFile);
+		OutputStream os = new FileOutputStream(destFile);
+		copy(is, os, buffer);
 
-    public static void copy(InputStream is, OutputStream os) throws IOException {
-        byte[] buf = new byte[1024];
-        int len;
-        while ((len = is.read(buf)) > 0) {
-            os.write(buf, 0, len);
-        }
-        is.close();
-        os.close();
-    }
+	}
 
-    public static void copyDirectory(File sourceLocation, File targetLocation)
-                                                                              throws IOException {
+	public static void copy(File sourceFile, File destFile, int bufferSize)
+			throws IOException {
+		copy(sourceFile, destFile, new byte[bufferSize]);
+	}
 
-        if (sourceLocation.isDirectory()) {
-            if (!targetLocation.exists()) {
-                targetLocation.mkdir();
-            }
+	public static void copy(InputStream is, OutputStream os) throws IOException {
+		copy(is, os, 4096);
+	}
 
-            String[] children = sourceLocation.list();
-            for (String element : children) {
-                copyDirectory(new File(sourceLocation, element),
-                              new File(targetLocation, element));
-            }
-        } else {
+	public static void copy(InputStream is, OutputStream os, byte[] buffer)
+			throws IOException {
+		int len;
+		while ((len = is.read(buffer)) > 0) {
+			os.write(buffer, 0, len);
+		}
+		is.close();
+		os.close();
+	}
 
-            InputStream in = new FileInputStream(sourceLocation);
-            OutputStream out = new FileOutputStream(targetLocation);
+	public static void copy(InputStream is, OutputStream os, int bufferSize)
+			throws IOException {
+		copy(is, os, new byte[bufferSize]);
+	}
 
-            // Copy the bits from instream to outstream
-            byte[] buf = new byte[1024];
-            int len;
-            while ((len = in.read(buf)) > 0) {
-                out.write(buf, 0, len);
-            }
-            in.close();
-            out.close();
-        }
-    }
+	public static void copyDirectory(File sourceLocation, File targetLocation)
+			throws IOException {
 
-    public static byte[] getBits(File classFile) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream fis = new FileInputStream(classFile);
-        copy(fis, baos);
-        return baos.toByteArray();
-    }
+		if (sourceLocation.isDirectory()) {
+			if (!targetLocation.exists()) {
+				targetLocation.mkdir();
+			}
 
-    public static void initializeDirectory(File directory) {
-        remove(directory);
-        if (!directory.mkdirs()) {
-            throw new IllegalStateException("Cannot create directtory: "
-                                            + directory);
-        }
-    }
+			String[] children = sourceLocation.list();
+			for (String element : children) {
+				copyDirectory(new File(sourceLocation, element), new File(
+						targetLocation, element));
+			}
+		} else {
 
-    public static void initializeDirectory(String dir) {
-        initializeDirectory(new File(dir));
-    }
+			InputStream in = new FileInputStream(sourceLocation);
+			OutputStream out = new FileOutputStream(targetLocation);
 
-    public static void remove(File directory) {
-        if (directory.exists()) {
-            for (File file : directory.listFiles()) {
-                if (file.isDirectory()) {
-                    remove(file);
-                } else {
-                    if (!file.delete()) {
-                        throw new IllegalStateException("Cannot delete file: "
-                                                        + file);
-                    }
-                }
-            }
-            if (!directory.delete()) {
-                throw new IllegalStateException("Cannot delete directory: "
-                                                + directory);
-            }
-        }
-    }
+			// Copy the bits from instream to outstream
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+			out.close();
+		}
+	}
 
-    public static boolean waitForCondition(int maxWaitTime, Condition condition) {
-        return waitForCondition(maxWaitTime, 100, condition);
-    }
+	public static byte[] getBits(File classFile) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		InputStream fis = new FileInputStream(classFile);
+		copy(fis, baos);
+		return baos.toByteArray();
+	}
 
-    public static boolean waitForCondition(int maxWaitTime,
-                                           final int sleepTime,
-                                           Condition condition) {
-        long endTime = System.currentTimeMillis() + maxWaitTime;
-        while (System.currentTimeMillis() < endTime) {
-            if (condition.isTrue()) {
-                return true;
-            }
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                // do nothing
-            }
-        }
-        return false;
-    }
+	public static void initializeDirectory(File directory) {
+		remove(directory);
+		if (!directory.mkdirs()) {
+			throw new IllegalStateException("Cannot create directtory: "
+					+ directory);
+		}
+	}
+
+	public static void initializeDirectory(String dir) {
+		initializeDirectory(new File(dir));
+	}
+
+	public static void remove(File directory) {
+		if (directory.exists()) {
+			for (File file : directory.listFiles()) {
+				if (file.isDirectory()) {
+					remove(file);
+				} else {
+					if (!file.delete()) {
+						throw new IllegalStateException("Cannot delete file: "
+								+ file);
+					}
+				}
+			}
+			if (!directory.delete()) {
+				throw new IllegalStateException("Cannot delete directory: "
+						+ directory);
+			}
+		}
+	}
+
+	public static boolean waitForCondition(int maxWaitTime, Condition condition) {
+		return waitForCondition(maxWaitTime, 100, condition);
+	}
+
+	public static boolean waitForCondition(int maxWaitTime,
+			final int sleepTime, Condition condition) {
+		long endTime = System.currentTimeMillis() + maxWaitTime;
+		while (System.currentTimeMillis() < endTime) {
+			if (condition.isTrue()) {
+				return true;
+			}
+			try {
+				Thread.sleep(sleepTime);
+			} catch (InterruptedException e) {
+				// do nothing
+			}
+		}
+		return false;
+	}
 }
