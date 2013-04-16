@@ -1,0 +1,14 @@
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eleifend tincidunt elit, 
+semper interdum odio suscipit non. AAAAAAAAA sodales $tortor vitae lectus interdum nec 
+convallis orci scelerisque. Mauris non ipsum in sem porttitor tempor in ullamcorper 
+magna. Sed nec tortor metus, $BBBBBBBBB blandit tortor. Nulla tincidunt varius sem id molestie. 
+Donec tincidunt urna id enim fermentum venenatis eu nec urna. Duis porttitor sagittis 
+sapien, bibendum vestibulum justo ${ CCCCCCCCC } non. Morbi vel neque ut felis 
+auctor facilisis ac in purus. Aliquam porta porttitor ligula, non tempor purus 
+porttitor et. Etiam cursus nulla vel nunc commodo eget eleifend diam ultrices. 
+Vestibulum non } augue. Vivamus ante lacus, porta ac lacinia non, pellentesque 
+suscipit lectus. Cras a risus ${ lectus viverra sagittis. Nulla facilisi. 
+Cras sodales urna id sem lobortis ${} posuere erat fermentum.
+
+Nunc mollis, elit ut fermentum mollis, quam erat iaculis enim, rhoncus cursus 
+felis nunc id odio. Vivamus bibendum congue erat quis massa nunc.
