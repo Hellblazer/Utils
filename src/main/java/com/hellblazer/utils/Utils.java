@@ -127,44 +127,135 @@ public class Utils {
 		copy(sourceFile, destFile, 4096);
 	}
 
+	/**
+	 * Copy the contents of the source file into the destination file using the
+	 * supplied buffer
+	 * 
+	 * @param sourceFile
+	 * @param destFile
+	 * @param buffer
+	 * @throws IOException
+	 */
 	public static void copy(File sourceFile, File destFile, byte[] buffer)
 			throws IOException {
-		InputStream is = new FileInputStream(sourceFile);
-		OutputStream os = new FileOutputStream(destFile);
-		copy(is, os, buffer);
-
+		InputStream is = null;
+		OutputStream os = null;
+		try {
+			is = new FileInputStream(sourceFile);
+			os = new FileOutputStream(destFile);
+			copy(is, os, buffer);
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					Logger.getAnonymousLogger().log(
+							Level.WARNING,
+							String.format("Error closing [%s]",
+									sourceFile.getAbsolutePath()));
+				}
+			}
+			if (os != null) {
+				try {
+					os.close();
+				} catch (IOException e) {
+					Logger.getAnonymousLogger().log(
+							Level.WARNING,
+							String.format("Error closing [%s]",
+									destFile.getAbsolutePath()));
+				}
+			}
+		}
 	}
 
+	/**
+	 * Copy the contents of the source file into the destination file using a
+	 * buffer of the supplied size
+	 * 
+	 * @param sourceFile
+	 * @param destFile
+	 * @param bufferSize
+	 * @throws IOException
+	 */
 	public static void copy(File sourceFile, File destFile, int bufferSize)
 			throws IOException {
 		copy(sourceFile, destFile, new byte[bufferSize]);
 	}
 
+	/**
+	 * Copy the contents of the input stream into the output stream using the
+	 * default buffer size
+	 * 
+	 * @param is
+	 * @param os
+	 * @throws IOException
+	 */
 	public static void copy(InputStream is, OutputStream os) throws IOException {
 		copy(is, os, 4096);
 	}
 
+	/**
+	 * Copy the contents of the input stream to the output stream. It is the
+	 * caller's responsibility to close the streams.
+	 * 
+	 * @param is
+	 *            - source
+	 * @param os
+	 *            - destination
+	 * @param buffer
+	 *            - byte buffer to use
+	 * @throws IOException
+	 */
 	public static void copy(InputStream is, OutputStream os, byte[] buffer)
 			throws IOException {
 		int len;
 		while ((len = is.read(buffer)) > 0) {
 			os.write(buffer, 0, len);
 		}
-		is.close();
-		os.close();
 	}
 
+	/**
+	 * Copy the contents of the input stream to the output stream. It is the
+	 * caller's responsibility to close the streams.
+	 * 
+	 * @param is
+	 *            - source
+	 * @param os
+	 *            - destination
+	 * @param bufferSize
+	 *            - buffer size to use
+	 * @throws IOException
+	 */
 	public static void copy(InputStream is, OutputStream os, int bufferSize)
 			throws IOException {
 		copy(is, os, new byte[bufferSize]);
 	}
 
+	/**
+	 * Replicate the entire contents of the source directory to the target
+	 * directory
+	 * 
+	 * @param sourceLocation
+	 *            - must be a directory and must exist
+	 * @param targetLocation
+	 *            - if exists, must be a directory. Will be created with full
+	 *            paths if does not exist
+	 * @throws IOException
+	 */
 	public static void copyDirectory(File sourceLocation, File targetLocation)
 			throws IOException {
 
 		if (sourceLocation.isDirectory()) {
 			if (!targetLocation.exists()) {
-				targetLocation.mkdir();
+				if (targetLocation.mkdirs()) {
+					throw new IllegalArgumentException(String.format(
+							"Cannot create directory [%s]",
+							targetLocation.getAbsolutePath()));
+				}
+			} else if (targetLocation.isFile()) {
+				throw new IllegalArgumentException(String.format(
+						"Target location must be a directory [%s]",
+						targetLocation.getAbsolutePath()));
 			}
 
 			String[] children = sourceLocation.list();
@@ -173,18 +264,9 @@ public class Utils {
 						targetLocation, element));
 			}
 		} else {
-
-			InputStream in = new FileInputStream(sourceLocation);
-			OutputStream out = new FileOutputStream(targetLocation);
-
-			// Copy the bits from instream to outstream
-			byte[] buf = new byte[1024];
-			int len;
-			while ((len = in.read(buf)) > 0) {
-				out.write(buf, 0, len);
-			}
-			in.close();
-			out.close();
+			throw new IllegalArgumentException(
+					String.format("[%s] is not a directory",
+							sourceLocation.getAbsolutePath()));
 		}
 	}
 
@@ -257,9 +339,16 @@ public class Utils {
 		}
 	}
 
-	public static byte[] getBits(File classFile) throws IOException {
+	/**
+	 * Answer the byte array containing the contents of the file
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] getBits(File file) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		InputStream fis = new FileInputStream(classFile);
+		InputStream fis = new FileInputStream(file);
 		copy(fis, baos);
 		return baos.toByteArray();
 	}
@@ -279,6 +368,12 @@ public class Utils {
 		return baos.toString();
 	}
 
+	/**
+	 * Remove and reinitialze the directory. The directory and full paths will
+	 * be created if it does not exist
+	 * 
+	 * @param directory
+	 */
 	public static void initializeDirectory(File directory) {
 		remove(directory);
 		if (!directory.mkdirs()) {
@@ -287,31 +382,51 @@ public class Utils {
 		}
 	}
 
+	/**
+	 * Remove and reinitialze the directory. The directory and full paths will
+	 * be created if it does not exist
+	 * 
+	 * @param dir
+	 */
 	public static void initializeDirectory(String dir) {
 		initializeDirectory(new File(dir));
 	}
 
-	public static boolean isClose(IOException ioe) {
+	/**
+	 * Answer true if the io exception is a form of a closed connection
+	 * 
+	 * @param ioe
+	 * @return
+	 */
+	public static boolean isClosedConnection(IOException ioe) {
 		return ioe instanceof ClosedChannelException
 				|| "Broken pipe".equals(ioe.getMessage())
 				|| "Connection reset by peer".equals(ioe.getMessage());
 	}
 
-	public static void remove(File directory) {
-		if (directory.exists()) {
-			for (File file : directory.listFiles()) {
-				if (file.isDirectory()) {
-					remove(file);
-				} else {
-					if (!file.delete()) {
-						throw new IllegalStateException("Cannot delete file: "
-								+ file);
+	/**
+	 * Remove the file. If the file is a directory, the entire contents will be
+	 * recursively removed.
+	 * 
+	 * @param directoryOrFile
+	 */
+	public static void remove(File directoryOrFile) {
+		if (directoryOrFile.exists()) {
+			if (directoryOrFile.isDirectory()) {
+				for (File file : directoryOrFile.listFiles()) {
+					if (file.isDirectory()) {
+						remove(file);
+					} else {
+						if (!file.delete()) {
+							throw new IllegalStateException(String.format(
+									"Cannot delete [%s] ", file));
+						}
 					}
 				}
 			}
-			if (!directory.delete()) {
-				throw new IllegalStateException("Cannot delete directory: "
-						+ directory);
+			if (!directoryOrFile.delete()) {
+				throw new IllegalStateException(String.format(
+						"Cannot delete [%s] ", directoryOrFile));
 			}
 		}
 	}
@@ -423,6 +538,10 @@ public class Utils {
 	}
 
 	/**
+	 * Transform the contents of the input stream, replacing any ${p} values in
+	 * the stream with the value in the supplied properties. The transformed
+	 * contents are placed in the supplied output file.
+	 * 
 	 * @param properties
 	 * @param extensions
 	 * @param is
@@ -453,6 +572,9 @@ public class Utils {
 	}
 
 	/**
+	 * Find the substitution value for the key in the properties. If the
+	 * supplied properties are null, use the system properties.
+	 * 
 	 * @param key
 	 * @param props
 	 * @return
@@ -494,12 +616,18 @@ public class Utils {
 		return value;
 	}
 
-	protected static String getExtension(String destFile) {
-		int index = destFile.lastIndexOf('.');
+	/**
+	 * Answer the extension of the file
+	 * 
+	 * @param file
+	 * @return
+	 */
+	protected static String getExtension(String file) {
+		int index = file.lastIndexOf('.');
 		if (index == -1) {
 			return "";
 		}
-		return destFile.substring(index + 1);
+		return file.substring(index + 1);
 	}
 
 	/**
