@@ -104,7 +104,8 @@ public class Utils {
 	 * @return the port number or -1 if none available
 	 */
 	public static int allocatePort(InetAddress host) {
-		InetSocketAddress address = new InetSocketAddress(host, 0);
+		InetSocketAddress address = host == null ? new InetSocketAddress(0)
+				: new InetSocketAddress(host, 0);
 		ServerSocket socket = null;
 		try {
 			socket = new ServerSocket();
@@ -187,68 +188,38 @@ public class Utils {
 		}
 	}
 
-	public static byte[] getBits(File classFile) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		InputStream fis = new FileInputStream(classFile);
-		copy(fis, baos);
-		return baos.toByteArray();
-	}
-
-	public static void initializeDirectory(File directory) {
-		remove(directory);
-		if (!directory.mkdirs()) {
-			throw new IllegalStateException("Cannot create directtory: "
-					+ directory);
+	/**
+	 * Expand the zip resource into the destination, replacing any ${propName}
+	 * style properties with the corresponding values in the substitutions map
+	 * 
+	 * @param zip
+	 *            - the zip file to expand
+	 * @param extensions
+	 *            - the list of file extensions targeted for property
+	 *            substitution
+	 * @param substitutions
+	 *            - the map of substitutions
+	 * @param destination
+	 *            - the destination directory for the expansion
+	 * 
+	 * @throws IOException
+	 * @throws ZipException
+	 */
+	public static void expandAndReplace(File zip, File dest,
+			Map<String, String> substitutions, Collection<String> extensions)
+			throws ZipException, IOException {
+		initializeDirectory(dest);
+		if (!dest.exists() && !dest.mkdir()) {
+			throw new IOException(String.format(
+					"Cannot create destination directory: %s",
+					dest.getAbsolutePath()));
 		}
-	}
-
-	public static void initializeDirectory(String dir) {
-		initializeDirectory(new File(dir));
-	}
-
-	public static boolean isClose(IOException ioe) {
-		return ioe instanceof ClosedChannelException
-				|| "Broken pipe".equals(ioe.getMessage())
-				|| "Connection reset by peer".equals(ioe.getMessage());
-	}
-
-	public static void remove(File directory) {
-		if (directory.exists()) {
-			for (File file : directory.listFiles()) {
-				if (file.isDirectory()) {
-					remove(file);
-				} else {
-					if (!file.delete()) {
-						throw new IllegalStateException("Cannot delete file: "
-								+ file);
-					}
-				}
-			}
-			if (!directory.delete()) {
-				throw new IllegalStateException("Cannot delete directory: "
-						+ directory);
-			}
+		ZipFile zippy = new ZipFile(zip);
+		Enumeration<?> e = zippy.entries();
+		while (e.hasMoreElements()) {
+			ZipEntry ze = (ZipEntry) e.nextElement();
+			expandAndReplace(dest, zippy, ze, substitutions, extensions);
 		}
-	}
-
-	public static boolean waitForCondition(int maxWaitTime, Condition condition) {
-		return waitForCondition(maxWaitTime, 100, condition);
-	}
-
-	public static boolean waitForCondition(int maxWaitTime,
-			final int sleepTime, Condition condition) {
-		long endTime = System.currentTimeMillis() + maxWaitTime;
-		while (System.currentTimeMillis() < endTime) {
-			if (condition.isTrue()) {
-				return true;
-			}
-			try {
-				Thread.sleep(sleepTime);
-			} catch (InterruptedException e) {
-				// do nothing
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -286,68 +257,11 @@ public class Utils {
 		}
 	}
 
-	/**
-	 * @param properties
-	 * @param extensions
-	 * @param is
-	 * @param outFile
-	 * @throws FileNotFoundException
-	 * @throws IOException
-	 */
-	private static void transform(Map<String, String> properties,
-			Collection<String> extensions, InputStream is, File outFile)
-			throws FileNotFoundException, IOException {
-		File parent = outFile.getParentFile();
-		if (parent != null) {
-			parent.mkdirs();
-		}
-		FileOutputStream fos = new FileOutputStream(outFile);
-		try {
-			if (extensions.contains(getExtension(outFile.getName()))) {
-				replaceProperties(is, fos, properties);
-			} else {
-				copy(is, fos);
-			}
-		} finally {
-			try {
-				fos.close();
-			} catch (IOException ioe) {
-			}
-		}
-	}
-
-	/**
-	 * Expand the zip resource into the destination, replacing any ${propName} style
-	 * properties with the corresponding values in the substitutions map
-	 * 
-	 * @param zip
-	 *            - the zip file to expand
-	 * @param extensions
-	 *            - the list of file extensions targeted for property
-	 *            substitution
-	 * @param substitutions
-	 *            - the map of substitutions
-	 * @param destination
-	 *            - the destination directory for the expansion
-	 * 
-	 * @throws IOException
-	 * @throws ZipException
-	 */
-	public static void expandAndReplace(File zip, File dest,
-			Map<String, String> substitutions, Collection<String> extensions)
-			throws ZipException, IOException {
-		initializeDirectory(dest);
-		if (!dest.exists() && !dest.mkdir()) {
-			throw new IOException(String.format(
-					"Cannot create destination directory: %s",
-					dest.getAbsolutePath()));
-		}
-		ZipFile zippy = new ZipFile(zip);
-		Enumeration<?> e = zippy.entries();
-		while (e.hasMoreElements()) {
-			ZipEntry ze = (ZipEntry) e.nextElement();
-			expandAndReplace(dest, zippy, ze, substitutions, extensions);
-		}
+	public static byte[] getBits(File classFile) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		InputStream fis = new FileInputStream(classFile);
+		copy(fis, baos);
+		return baos.toByteArray();
 	}
 
 	/**
@@ -363,6 +277,43 @@ public class Utils {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		copy(is, baos);
 		return baos.toString();
+	}
+
+	public static void initializeDirectory(File directory) {
+		remove(directory);
+		if (!directory.mkdirs()) {
+			throw new IllegalStateException("Cannot create directtory: "
+					+ directory);
+		}
+	}
+
+	public static void initializeDirectory(String dir) {
+		initializeDirectory(new File(dir));
+	}
+
+	public static boolean isClose(IOException ioe) {
+		return ioe instanceof ClosedChannelException
+				|| "Broken pipe".equals(ioe.getMessage())
+				|| "Connection reset by peer".equals(ioe.getMessage());
+	}
+
+	public static void remove(File directory) {
+		if (directory.exists()) {
+			for (File file : directory.listFiles()) {
+				if (file.isDirectory()) {
+					remove(file);
+				} else {
+					if (!file.delete()) {
+						throw new IllegalStateException("Cannot delete file: "
+								+ file);
+					}
+				}
+			}
+			if (!directory.delete()) {
+				throw new IllegalStateException("Cannot delete directory: "
+						+ directory);
+			}
+		}
 	}
 
 	/**
@@ -449,6 +400,56 @@ public class Utils {
 			}
 		}
 		writer.flush();
+	}
+
+	public static boolean waitForCondition(int maxWaitTime, Condition condition) {
+		return waitForCondition(maxWaitTime, 100, condition);
+	}
+
+	public static boolean waitForCondition(int maxWaitTime,
+			final int sleepTime, Condition condition) {
+		long endTime = System.currentTimeMillis() + maxWaitTime;
+		while (System.currentTimeMillis() < endTime) {
+			if (condition.isTrue()) {
+				return true;
+			}
+			try {
+				Thread.sleep(sleepTime);
+			} catch (InterruptedException e) {
+				// do nothing
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param properties
+	 * @param extensions
+	 * @param is
+	 * @param outFile
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	private static void transform(Map<String, String> properties,
+			Collection<String> extensions, InputStream is, File outFile)
+			throws FileNotFoundException, IOException {
+		File parent = outFile.getParentFile();
+		if (parent != null) {
+			parent.mkdirs();
+		}
+		FileOutputStream fos = new FileOutputStream(outFile);
+		try {
+			if (extensions.contains(getExtension(outFile.getName()))) {
+				replaceProperties(is, fos, properties);
+			} else {
+				copy(is, fos);
+			}
+		} finally {
+			try {
+				fos.close();
+			} catch (IOException ioe) {
+			}
+		}
 	}
 
 	/**
