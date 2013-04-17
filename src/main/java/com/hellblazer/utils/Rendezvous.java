@@ -140,36 +140,6 @@ public class Rendezvous {
 	}
 
 	/**
-	 * @param party
-	 *            - the index of the party rendezvousing
-	 * @throws BrokenBarrierException
-	 */
-	public void meet(int party) throws BrokenBarrierException {
-		boolean run = false;
-		synchronized (mutex) {
-			if (count == 0) {
-				throw new IllegalStateException("All parties have rendezvoused");
-			}
-			if (cancelled) {
-				throw new BrokenBarrierException();
-			}
-			count -= party;
-			if (count == 0) {
-				if (scheduled != null) {
-					scheduled.cancel(true);
-				}
-				scheduled = null;
-				run = true;
-			}
-		}
-		if (run) {
-			if (action != null) {
-				action.run();
-			}
-		}
-	}
-
-	/**
 	 * Schedule a cancellation of the rendezvous. The scehduled cancellation is
 	 * tracked and maintained by the receiver.
 	 * 

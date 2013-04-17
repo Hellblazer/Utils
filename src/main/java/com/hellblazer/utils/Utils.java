@@ -260,8 +260,13 @@ public class Utils {
 
 			String[] children = sourceLocation.list();
 			for (String element : children) {
-				copyDirectory(new File(sourceLocation, element), new File(
-						targetLocation, element));
+				File child = new File(sourceLocation, element);
+				File targetChild = new File(targetLocation, element);
+				if (child.isDirectory()) {
+					copyDirectory(child, targetChild);
+				} else {
+					copy(child, targetChild);
+				}
 			}
 		} else {
 			throw new IllegalArgumentException(
