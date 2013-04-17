@@ -37,8 +37,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -106,19 +104,11 @@ public class Utils {
 	public static int allocatePort(InetAddress host) {
 		InetSocketAddress address = host == null ? new InetSocketAddress(0)
 				: new InetSocketAddress(host, 0);
-		ServerSocket socket = null;
-		try {
-			socket = new ServerSocket();
+		try (ServerSocket socket = new ServerSocket();) {
+
 			socket.bind(address);
 			return socket.getLocalPort();
 		} catch (IOException e) {
-		} finally {
-			if (socket != null) {
-				try {
-					socket.close();
-				} catch (IOException e) {
-				}
-			}
 		}
 		return -1;
 	}
@@ -138,33 +128,9 @@ public class Utils {
 	 */
 	public static void copy(File sourceFile, File destFile, byte[] buffer)
 			throws IOException {
-		InputStream is = null;
-		OutputStream os = null;
-		try {
-			is = new FileInputStream(sourceFile);
-			os = new FileOutputStream(destFile);
+		try (InputStream is = new FileInputStream(sourceFile);
+				OutputStream os = new FileOutputStream(destFile);) {
 			copy(is, os, buffer);
-		} finally {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (IOException e) {
-					Logger.getAnonymousLogger().log(
-							Level.WARNING,
-							String.format("Error closing [%s]",
-									sourceFile.getAbsolutePath()));
-				}
-			}
-			if (os != null) {
-				try {
-					os.close();
-				} catch (IOException e) {
-					Logger.getAnonymousLogger().log(
-							Level.WARNING,
-							String.format("Error closing [%s]",
-									destFile.getAbsolutePath()));
-				}
-			}
 		}
 	}
 
@@ -326,20 +292,13 @@ public class Utils {
 	public static void expandAndReplace(File dest, ZipFile zf, ZipEntry ze,
 			Map<String, String> properties, Collection<String> extensions)
 			throws IOException {
-		InputStream is = zf.getInputStream(ze);
-		try {
+
+		try (InputStream is = zf.getInputStream(ze);) {
 			File outFile = new File(dest, ze.getName());
 			if (ze.isDirectory()) {
 				outFile.mkdirs();
 			} else {
 				transform(properties, extensions, is, outFile);
-			}
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				Logger.getAnonymousLogger().log(Level.FINEST,
-						String.format("Error closing %s", ze), e);
 			}
 		}
 	}
@@ -433,6 +392,36 @@ public class Utils {
 				throw new IllegalStateException(String.format(
 						"Cannot delete [%s] ", directoryOrFile));
 			}
+		}
+	}
+
+	/**
+	 * Go through the input stream and replace any occurance of ${p} with the
+	 * props.get(p) value. If there is no such property p defined, then the ${p}
+	 * reference will remain unchanged.
+	 * 
+	 * If the property reference is of the form ${p:v} and there is no such
+	 * property p, then the default value v will be returned.
+	 * 
+	 * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
+	 * primary and the secondary properties will be tried in turn, before
+	 * returning either the unchanged input, or the default value.
+	 * 
+	 * @param in
+	 *            - the file with possible ${x} references
+	 * @param out
+	 *            - the file output for the transformed input
+	 * @param props
+	 *            - the source for ${x} property ref values, null means use
+	 *            System.getProperty()
+	 * @throws IOException
+	 */
+	public static void replaceProperties(File in, File out,
+			Map<String, String> props) throws IOException {
+		try (InputStream is = new FileInputStream(in);
+				OutputStream os = new FileOutputStream(out);) {
+
+			replaceProperties(is, os, props);
 		}
 	}
 
@@ -561,17 +550,12 @@ public class Utils {
 		if (parent != null) {
 			parent.mkdirs();
 		}
-		FileOutputStream fos = new FileOutputStream(outFile);
-		try {
+
+		try (FileOutputStream fos = new FileOutputStream(outFile);) {
 			if (extensions.contains(getExtension(outFile.getName()))) {
 				replaceProperties(is, fos, properties);
 			} else {
 				copy(is, fos);
-			}
-		} finally {
-			try {
-				fos.close();
-			} catch (IOException ioe) {
 			}
 		}
 	}
