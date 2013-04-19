@@ -107,4 +107,8 @@ public class TemporaryDirectory implements AutoCloseable {
 		}
 	}
 
+	public String toString() {
+		return String.format("temp dir[%s]", directory);
+	}
+
 }
