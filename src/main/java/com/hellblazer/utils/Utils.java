@@ -318,6 +318,50 @@ public class Utils {
 	}
 
 	/**
+	 * Answer the extension of the file
+	 * 
+	 * @param file
+	 * @return
+	 */
+	public static String getExtension(File file) {
+		String name = file.getName();
+		int index = name.lastIndexOf('.');
+		if (index == -1) {
+			return "";
+		}
+		return name.substring(index + 1);
+	}
+
+	/**
+	 * Answer the extension of the file
+	 * 
+	 * @param file
+	 * @return
+	 */
+	public static String getExtension(String file) {
+		int index = file.lastIndexOf('.');
+		if (index == -1) {
+			return "";
+		}
+		return file.substring(index + 1);
+	}
+
+	/**
+	 * Answer the extension of the file
+	 * 
+	 * @param file
+	 * @return
+	 */
+	public static String getNameWithoutExtension(File file) {
+		String name = file.getName();
+		int index = name.lastIndexOf('.');
+		if (index == -1) {
+			return "";
+		}
+		return name.substring(0, index);
+	}
+
+	/**
 	 * Answer the string representation of the inputstream
 	 * 
 	 * @param openStream
@@ -603,20 +647,6 @@ public class Utils {
 			}
 		}
 		return value;
-	}
-
-	/**
-	 * Answer the extension of the file
-	 * 
-	 * @param file
-	 * @return
-	 */
-	protected static String getExtension(String file) {
-		int index = file.lastIndexOf('.');
-		if (index == -1) {
-			return "";
-		}
-		return file.substring(index + 1);
 	}
 
 	/**
