@@ -97,6 +97,7 @@ public class TemporaryDirectory implements AutoCloseable {
 	public TemporaryDirectory(String prefix, String suffix, File dir)
 			throws IOException {
 		directory = File.createTempFile(prefix, suffix, dir);
+		directory.deleteOnExit();
 		Utils.initializeDirectory(directory);
 	}
 
