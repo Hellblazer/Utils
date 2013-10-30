@@ -14,6 +14,8 @@
  */
 package com.hellblazer.utils;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -23,36 +25,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
-import com.hellblazer.utils.Utils;
 
 /**
  * @author hhildebrand
  * 
  */
 public class TestPropertyReplace {
-	@Test
-	public void testreplaceProperties() throws Exception {
-		Map<String, String> properties = new HashMap<>();
-		properties.put("test.1", "AAAAAAAAA");
-		properties.put("test.2", "BBBBBBBBB");
-		properties.put("test.3", "CCCCCCCCC");
+    @Test
+    public void testreplaceProperties() throws Exception {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("test.1", "AAAAAAAAA");
+        properties.put("test.2", "BBBBBBBBB");
+        properties.put("test.3", "CCCCCCCCC");
 
-		File temp = File.createTempFile("proptest", ".txt");
-		temp.deleteOnExit();
-		InputStream in = getClass().getResourceAsStream("test.txt");
-		OutputStream out = new FileOutputStream(temp);
-		Utils.replaceProperties(in, out, properties);
+        File temp = File.createTempFile("proptest", ".txt");
+        temp.deleteOnExit();
+        InputStream in = getClass().getResourceAsStream("test.txt");
+        OutputStream out = new FileOutputStream(temp);
+        Utils.replaceProperties(in, out, properties);
 
-		in.close();
-		out.close();
+        in.close();
+        out.close();
 
-		FileInputStream resultStream = new FileInputStream(temp);
-		InputStream expectedStream = getClass().getResourceAsStream(
-				"expected.txt");
-		String expectedDocument = Utils.getString(expectedStream);
-		String resultDocument = Utils.getString(resultStream);
-		assertEquals(expectedDocument, resultDocument);
+        FileInputStream resultStream = new FileInputStream(temp);
+        InputStream expectedStream = getClass().getResourceAsStream("expected.txt");
+        String expectedDocument = Utils.getString(expectedStream);
+        String resultDocument = Utils.getString(resultStream);
+        assertEquals(expectedDocument, resultDocument);
 
-	}
+    }
 }

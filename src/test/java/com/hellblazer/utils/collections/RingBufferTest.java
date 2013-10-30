@@ -24,37 +24,11 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import com.hellblazer.utils.collections.RingBuffer;
-
 /**
  * @author hhildebrand
  * 
  */
 public class RingBufferTest {
-    @Test
-    public void testOffer() {
-        RingBuffer<String> test = new RingBuffer<String>(1000);
-        for (int i = 0; i < 1000; i++) {
-            assertEquals("Invalid size", i, test.size());
-            assertTrue(test.offer(String.format("Offer: %s", i)));
-        }
-        assertEquals("Invalid size", 1000, test.size());
-        assertFalse((test.offer(String.format("Offer: %s", 1001))));
-    }
-
-    @Test
-    public void testPoll() {
-        RingBuffer<String> test = new RingBuffer<String>(1000);
-        for (int i = 0; i < 1000; i++) {
-            test.add(String.format("Add: %s", i));
-        }
-        for (int i = 0; i < 1000; i++) {
-            assertEquals("Invalid size", 1000 - i, test.size());
-            assertEquals(String.format("Add: %s", i), test.poll());
-        }
-        assertNull(test.poll());
-    }
-
     @Test
     public void testAccordian() {
         Random r = new Random(0x666);
@@ -87,6 +61,30 @@ public class RingBufferTest {
         for (String element : test) {
             assertEquals(String.format("Offer: %s", i++), element);
         }
+    }
+
+    @Test
+    public void testOffer() {
+        RingBuffer<String> test = new RingBuffer<String>(1000);
+        for (int i = 0; i < 1000; i++) {
+            assertEquals("Invalid size", i, test.size());
+            assertTrue(test.offer(String.format("Offer: %s", i)));
+        }
+        assertEquals("Invalid size", 1000, test.size());
+        assertFalse(test.offer(String.format("Offer: %s", 1001)));
+    }
+
+    @Test
+    public void testPoll() {
+        RingBuffer<String> test = new RingBuffer<String>(1000);
+        for (int i = 0; i < 1000; i++) {
+            test.add(String.format("Add: %s", i));
+        }
+        for (int i = 0; i < 1000; i++) {
+            assertEquals("Invalid size", 1000 - i, test.size());
+            assertEquals(String.format("Add: %s", i), test.poll());
+        }
+        assertNull(test.poll());
     }
 
     @Test

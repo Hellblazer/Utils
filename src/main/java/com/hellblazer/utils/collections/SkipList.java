@@ -159,6 +159,20 @@ public final class SkipList {
         return size;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (int i = 0; i < size(); i++) {
+            if (i != 0) {
+                sb.append(',');
+            }
+            sb.append(get(i));
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
     private void delete(final Node node, final Node[] update) {
         for (int i = 0; i < level; i++) {
             if (update[i].next[i] == node) {
@@ -203,19 +217,6 @@ public final class SkipList {
             }
         }
         return curr;
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append('[');
-        for (int i = 0; i < size(); i++) {
-            if (i != 0) {
-                sb.append(',');
-            }
-            sb.append(get(i));
-        }
-        sb.append(']');
-        return sb.toString();
     }
 
 }

@@ -147,360 +147,358 @@ import com.hellblazer.utils.MersenneTwister;
  */
 
 public final class ConsistentHashFunction<T extends Comparable<? super T>>
-		implements Cloneable, Iterable<T> {
+        implements Cloneable, Iterable<T> {
 
-	/**
-	 * Allows to skip suitable items when searching for the closest replica.
-	 * 
-	 * <P>
-	 * Sometimes it is useful to restrict the set of buckets that can be
-	 * returned without modifying a consistent hash function (if not else,
-	 * because any change requires removing or adding
-	 * {@link ConsistentHashFunction#replicaePerBucket} replicae).
-	 * 
-	 * <P>
-	 * To do so, it is possible to
-	 * {@linkplain ConsistentHashFunction#ConsistentHashFunction(ConsistentHashFunction.SkipStrategy)
-	 * provide at construction time} a strategy that, at each call to
-	 * {@link ConsistentHashFunction#hash(long)}, will be used to test whether
-	 * the bucket of a certain replica can be returned or not. Of course, in the
-	 * latter case the search will continue with the next replica.
-	 */
+    /**
+     * Allows to skip suitable items when searching for the closest replica.
+     * 
+     * <P>
+     * Sometimes it is useful to restrict the set of buckets that can be
+     * returned without modifying a consistent hash function (if not else,
+     * because any change requires removing or adding
+     * {@link ConsistentHashFunction#replicaePerBucket} replicae).
+     * 
+     * <P>
+     * To do so, it is possible to
+     * {@linkplain ConsistentHashFunction#ConsistentHashFunction(ConsistentHashFunction.SkipStrategy)
+     * provide at construction time} a strategy that, at each call to
+     * {@link ConsistentHashFunction#hash(long)}, will be used to test whether
+     * the bucket of a certain replica can be returned or not. Of course, in the
+     * latter case the search will continue with the next replica.
+     */
 
-	public static interface SkipStrategy<T> {
+    public static interface SkipStrategy<T> {
 
-		/**
-		 * Checks whether a bucket can be returned or should be skipped. As
-		 * mulitple buckets can be returned, the list of buckets preceding the
-		 * test value are supplied so that skip logic can take into account any
-		 * interdependencies - such as same rack, same host, etc.
-		 * 
-		 * @param previous
-		 *            the list of buckets preceeding the bucket to test
-		 * @param bucket
-		 *            the bucket to test.
-		 * @return true if the bucket should be skipped.
-		 */
-		public boolean isSkippable(List<T> previous, T bucket);
-	}
+        /**
+         * Checks whether a bucket can be returned or should be skipped. As
+         * mulitple buckets can be returned, the list of buckets preceding the
+         * test value are supplied so that skip logic can take into account any
+         * interdependencies - such as same rack, same host, etc.
+         * 
+         * @param previous
+         *            the list of buckets preceeding the bucket to test
+         * @param bucket
+         *            the bucket to test.
+         * @return true if the bucket should be skipped.
+         */
+        public boolean isSkippable(List<T> previous, T bucket);
+    }
 
-	private static int DEFAULT_REPLICAS = 200;
-	private static final Logger log = Logger
-			.getLogger(ConsistentHashFunction.class.getCanonicalName());
+    private static int                    DEFAULT_REPLICAS = 200;
+    private static final Logger           log              = Logger.getLogger(ConsistentHashFunction.class.getCanonicalName());
 
-	/** Each bucket is replicated this number of times. */
-	public final int replicaePerBucket;
-	/** The cached key set of {@link #sizes}. */
-	final private Set<T> buckets;
-	/** Maps points in the unit interval to buckets. */
-	final private SortedMap<Long, Object> replicae = new TreeMap<Long, Object>();
-	/** For each bucket, its size. */
-	final private Map<T, Integer> sizes = new HashMap<T, Integer>();
-	/** The optional strategy to skip buckets, or <code>null</code>. */
-	final private SkipStrategy<T> skipStrategy;
+    /** Each bucket is replicated this number of times. */
+    public final int                      replicaePerBucket;
+    /** The cached key set of {@link #sizes}. */
+    final private Set<T>                  buckets;
+    /** Maps points in the unit interval to buckets. */
+    final private SortedMap<Long, Object> replicae         = new TreeMap<Long, Object>();
+    /** For each bucket, its size. */
+    final private Map<T, Integer>         sizes            = new HashMap<T, Integer>();
+    /** The optional strategy to skip buckets, or <code>null</code>. */
+    final private SkipStrategy<T>         skipStrategy;
 
-	/** Creates a new consistent hash function. */
-	public ConsistentHashFunction() {
-		this(DEFAULT_REPLICAS);
-	}
+    /** Creates a new consistent hash function. */
+    public ConsistentHashFunction() {
+        this(DEFAULT_REPLICAS);
+    }
 
-	public ConsistentHashFunction(int replicas) {
-		this(null, replicas);
-	}
+    public ConsistentHashFunction(int replicas) {
+        this(null, replicas);
+    }
 
-	public ConsistentHashFunction(SkipStrategy<T> skipStrategy) {
-		this(skipStrategy, DEFAULT_REPLICAS);
-	}
+    public ConsistentHashFunction(SkipStrategy<T> skipStrategy) {
+        this(skipStrategy, DEFAULT_REPLICAS);
+    }
 
-	/**
-	 * Creates a new consistent hash function with given skip strategy.
-	 * 
-	 * @param skipStrategy
-	 *            a skip strategy, or <code>null</code>.
-	 * @param replicas
-	 *            the number of replicas per bucket
-	 */
-	public ConsistentHashFunction(final SkipStrategy<T> skipStrategy,
-			int replicas) {
-		this.skipStrategy = skipStrategy;
-		this.replicaePerBucket = replicas;
-		buckets = getSizes().keySet();
-	}
+    /**
+     * Creates a new consistent hash function with given skip strategy.
+     * 
+     * @param skipStrategy
+     *            a skip strategy, or <code>null</code>.
+     * @param replicas
+     *            the number of replicas per bucket
+     */
+    public ConsistentHashFunction(final SkipStrategy<T> skipStrategy,
+                                  int replicas) {
+        this.skipStrategy = skipStrategy;
+        this.replicaePerBucket = replicas;
+        buckets = getSizes().keySet();
+    }
 
-	/**
-	 * Adds a bucket to the map.
-	 * 
-	 * @param bucket
-	 *            the new bucket.
-	 * @param weight
-	 *            the weight of the new bucket; buckets with a larger weight are
-	 *            returned proportionately more often.
-	 * @return false if the bucket was already present.
-	 */
+    /**
+     * Adds a bucket to the map.
+     * 
+     * @param bucket
+     *            the new bucket.
+     * @param weight
+     *            the weight of the new bucket; buckets with a larger weight are
+     *            returned proportionately more often.
+     * @return false if the bucket was already present.
+     */
 
-	@SuppressWarnings("unchecked")
-	public boolean add(final T bucket, final int weight) {
+    @SuppressWarnings("unchecked")
+    public boolean add(final T bucket, final int weight) {
 
-		if (getSizes().containsKey(bucket)) {
-			return false;
-		}
-		getSizes().put(bucket, weight);
+        if (getSizes().containsKey(bucket)) {
+            return false;
+        }
+        getSizes().put(bucket, weight);
 
-		final MersenneTwister twister = new MersenneTwister(bucket.hashCode());
+        final MersenneTwister twister = new MersenneTwister(bucket.hashCode());
 
-		long point;
-		Object o;
-		SortedSet<T> conflictSet;
+        long point;
+        Object o;
+        SortedSet<T> conflictSet;
 
-		for (int i = 0; i < weight * replicaePerBucket; i++) {
+        for (int i = 0; i < weight * replicaePerBucket; i++) {
 
-			point = twister.nextLong();
+            point = twister.nextLong();
 
-			if ((o = replicae.get(point)) != null) {
-				if (o != bucket) { // o == bucket should happen with very low
-									// probability.
-					if (o instanceof SortedSet) {
-						if (log.isLoggable(Level.FINEST)) {
-							log.finest(String.format(
-									"Adding bucket %s to the conflict set",
-									bucket));
-						}
-						((SortedSet<T>) o).add(bucket);
-					} else {
-						if (log.isLoggable(Level.FINEST)) {
-							log.finest(String
-									.format("Creating conflict set for buckets %s and %s",
-											o, bucket));
-						}
-						conflictSet = new TreeSet<T>();
-						conflictSet.add((T) o);
-						conflictSet.add(bucket);
-						replicae.put(point, conflictSet);
-					}
-				}
-			} else {
-				replicae.put(point, bucket);
-			}
-		}
+            if ((o = replicae.get(point)) != null) {
+                if (o != bucket) { // o == bucket should happen with very low
+                                   // probability.
+                    if (o instanceof SortedSet) {
+                        if (log.isLoggable(Level.FINEST)) {
+                            log.finest(String.format("Adding bucket %s to the conflict set",
+                                                     bucket));
+                        }
+                        ((SortedSet<T>) o).add(bucket);
+                    } else {
+                        if (log.isLoggable(Level.FINEST)) {
+                            log.finest(String.format("Creating conflict set for buckets %s and %s",
+                                                     o, bucket));
+                        }
+                        conflictSet = new TreeSet<T>();
+                        conflictSet.add((T) o);
+                        conflictSet.add(bucket);
+                        replicae.put(point, conflictSet);
+                    }
+                }
+            } else {
+                replicae.put(point, bucket);
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	@Override
-	public ConsistentHashFunction<T> clone() {
-		ConsistentHashFunction<T> dupe = new ConsistentHashFunction<T>(
-				skipStrategy, replicaePerBucket);
-		for (Entry<T, Integer> entry : getSizes().entrySet()) {
-			dupe.add(entry.getKey(), entry.getValue());
-		}
-		return dupe;
-	}
+    @Override
+    public ConsistentHashFunction<T> clone() {
+        ConsistentHashFunction<T> dupe = new ConsistentHashFunction<T>(
+                                                                       skipStrategy,
+                                                                       replicaePerBucket);
+        for (Entry<T, Integer> entry : getSizes().entrySet()) {
+            dupe.add(entry.getKey(), entry.getValue());
+        }
+        return dupe;
+    }
 
-	/**
-	 * Returns the set of buckets of this consistent hash function.
-	 * 
-	 * @return the set of buckets.
-	 */
+    /**
+     * Returns the set of buckets of this consistent hash function.
+     * 
+     * @return the set of buckets.
+     */
 
-	public Set<T> getBuckets() {
-		return buckets;
-	}
+    public Set<T> getBuckets() {
+        return buckets;
+    }
 
-	/**
-	 * @return the replicaePerBucket
-	 */
-	public int getReplicaePerBucket() {
-		return replicaePerBucket;
-	}
+    /**
+     * @return the replicaePerBucket
+     */
+    public int getReplicaePerBucket() {
+        return replicaePerBucket;
+    }
 
-	public Map<T, Integer> getSizes() {
-		return sizes;
-	}
+    public Map<T, Integer> getSizes() {
+        return sizes;
+    }
 
-	/**
-	 * @return the skipStrategy
-	 */
-	public SkipStrategy<T> getSkipStrategy() {
-		return skipStrategy;
-	}
+    /**
+     * @return the skipStrategy
+     */
+    public SkipStrategy<T> getSkipStrategy() {
+        return skipStrategy;
+    }
 
-	/**
-	 * Returns the bucket of the replica that is closest to the given point.
-	 * 
-	 * @param point
-	 *            a point on the unit circle.
-	 * @return the bucket of the closest replica, or <code>null</code> if there
-	 *         are no buckets or all buckets must be skipped.
-	 * @see #hash(long, int)
-	 * @throws NoSuchElementException
-	 *             if there are no buckets, or if a skip strategy has been
-	 *             specified and it skipped all existings buckets.
-	 */
+    /**
+     * Returns the bucket of the replica that is closest to the given point.
+     * 
+     * @param point
+     *            a point on the unit circle.
+     * @return the bucket of the closest replica, or <code>null</code> if there
+     *         are no buckets or all buckets must be skipped.
+     * @see #hash(long, int)
+     * @throws NoSuchElementException
+     *             if there are no buckets, or if a skip strategy has been
+     *             specified and it skipped all existings buckets.
+     */
 
-	public T hash(long point) {
-		final List<T> result = hash(point, 1);
-		if (result.size() == 0) {
-			throw new NoSuchElementException();
-		} else {
-			return result.get(0);
-		}
-	}
+    public T hash(long point) {
+        final List<T> result = hash(point, 1);
+        if (result.size() == 0) {
+            throw new NoSuchElementException();
+        } else {
+            return result.get(0);
+        }
+    }
 
-	/**
-	 * Returns an array of buckets whose replicae are close to the given point.
-	 * The first element will be the bucket of the replica closest to the point,
-	 * followed by the bucket of the next closest replica (whose bucket is not
-	 * the first, of course) and so on.
-	 * 
-	 * @param point
-	 *            a point on the unit circle.
-	 * @param n
-	 *            the number of closest buckets to return.
-	 * @return an array of distinct buckets of the closest replicas; the array
-	 *         could be shorter than <code>n</code> if there are not enough
-	 *         buckets and, in case a skip strategy has been specified, it could
-	 *         be empty even if the bucket set is nonempty.
-	 */
+    /**
+     * Returns an array of buckets whose replicae are close to the given point.
+     * The first element will be the bucket of the replica closest to the point,
+     * followed by the bucket of the next closest replica (whose bucket is not
+     * the first, of course) and so on.
+     * 
+     * @param point
+     *            a point on the unit circle.
+     * @param n
+     *            the number of closest buckets to return.
+     * @return an array of distinct buckets of the closest replicas; the array
+     *         could be shorter than <code>n</code> if there are not enough
+     *         buckets and, in case a skip strategy has been specified, it could
+     *         be empty even if the bucket set is nonempty.
+     */
 
-	public List<T> hash(long point, int n) {
-		if (n == 0 || buckets.size() == 0) {
-			return Collections.emptyList();
-		}
+    public List<T> hash(long point, int n) {
+        if (n == 0 || buckets.size() == 0) {
+            return Collections.emptyList();
+        }
 
-		final ArrayList<T> result = new ArrayList<T>(n);
+        final ArrayList<T> result = new ArrayList<T>(n);
 
-		for (int pass = 0; pass < 2; pass++) {
-			Map<Long, Object> map = pass == 0 ? replicae.tailMap(point)
-					: replicae.headMap(point);
-			for (Entry<Long, Object> entry : map.entrySet()) {
-				if (entry.getValue() instanceof SortedSet) {
-					@SuppressWarnings("unchecked")
-					SortedSet<T> value = (SortedSet<T>) entry.getValue();
-					for (T p : value) {
-						if ((skipStrategy == null || !skipStrategy.isSkippable(
-								result, p))
-								&& !result.contains(p)
-								&& result.add(p) && --n == 0) {
-							return result;
-						}
-					}
-				} else {
-					@SuppressWarnings("unchecked")
-					T value = (T) entry.getValue();
-					if ((skipStrategy == null || !skipStrategy.isSkippable(
-							result, value))
-							&& !result.contains(value)
-							&& result.add(value) && --n == 0) {
-						return result;
-					}
-				}
-			}
-		}
+        for (int pass = 0; pass < 2; pass++) {
+            Map<Long, Object> map = pass == 0 ? replicae.tailMap(point)
+                                             : replicae.headMap(point);
+            for (Entry<Long, Object> entry : map.entrySet()) {
+                if (entry.getValue() instanceof SortedSet) {
+                    @SuppressWarnings("unchecked")
+                    SortedSet<T> value = (SortedSet<T>) entry.getValue();
+                    for (T p : value) {
+                        if ((skipStrategy == null || !skipStrategy.isSkippable(result,
+                                                                               p))
+                            && !result.contains(p) && result.add(p) && --n == 0) {
+                            return result;
+                        }
+                    }
+                } else {
+                    @SuppressWarnings("unchecked")
+                    T value = (T) entry.getValue();
+                    if ((skipStrategy == null || !skipStrategy.isSkippable(result,
+                                                                           value))
+                        && !result.contains(value)
+                        && result.add(value)
+                        && --n == 0) {
+                        return result;
+                    }
+                }
+            }
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	/**
-	 * Returns the bucket of the replica that is closest to the given key.
-	 * 
-	 * @param key
-	 *            an object to hash.
-	 * @return the bucket of the closest replica, or <code>null</code> if there
-	 *         are no buckets or all buckets must be skipped.
-	 * @see #hash(Object, int)
-	 * @throws NoSuchElementException
-	 *             if there are no buckets, or if a skip strategy has been
-	 *             specified and it skipped all existings buckets.
-	 */
+    /**
+     * Returns the bucket of the replica that is closest to the given key.
+     * 
+     * @param key
+     *            an object to hash.
+     * @return the bucket of the closest replica, or <code>null</code> if there
+     *         are no buckets or all buckets must be skipped.
+     * @see #hash(Object, int)
+     * @throws NoSuchElementException
+     *             if there are no buckets, or if a skip strategy has been
+     *             specified and it skipped all existings buckets.
+     */
 
-	public T hash(final Object key) {
-		final List<T> result = hash(key, 1);
-		if (result.size() == 0) {
-			throw new NoSuchElementException();
-		} else {
-			return result.get(0);
-		}
-	}
+    public T hash(final Object key) {
+        final List<T> result = hash(key, 1);
+        if (result.size() == 0) {
+            throw new NoSuchElementException();
+        } else {
+            return result.get(0);
+        }
+    }
 
-	/**
-	 * Returns an array of buckets whose replicae are close to the given object.
-	 * 
-	 * @param key
-	 *            an object ot hash.
-	 * @param n
-	 *            the number of close buckets to return.
-	 * 
-	 *            <P>
-	 *            This method just uses <code>hashCode() << 32</code> as point
-	 *            for {@link #hash(long,int)}
-	 * @return an array of distinct buckets of the closest replicas; the array
-	 *         could be shorter than <code>n</code> if there are not enough
-	 *         buckets and, in case a skip strategy has been specified, it could
-	 *         be empty even if the bucket set is nonempty.
-	 * @see #hash(long, int)
-	 */
+    /**
+     * Returns an array of buckets whose replicae are close to the given object.
+     * 
+     * @param key
+     *            an object ot hash.
+     * @param n
+     *            the number of close buckets to return.
+     * 
+     *            <P>
+     *            This method just uses <code>hashCode() << 32</code> as point
+     *            for {@link #hash(long,int)}
+     * @return an array of distinct buckets of the closest replicas; the array
+     *         could be shorter than <code>n</code> if there are not enough
+     *         buckets and, in case a skip strategy has been specified, it could
+     *         be empty even if the bucket set is nonempty.
+     * @see #hash(long, int)
+     */
 
-	public List<T> hash(final Object key, final int n) {
-		return hash((long) key.hashCode() << 32, n);
-	}
+    public List<T> hash(final Object key, final int n) {
+        return hash((long) key.hashCode() << 32, n);
+    }
 
-	@Override
-	public Iterator<T> iterator() {
-		return buckets.iterator();
-	}
+    @Override
+    public Iterator<T> iterator() {
+        return buckets.iterator();
+    }
 
-	/**
-	 * Removes a bucket.
-	 * 
-	 * @param bucket
-	 *            the bucket to be removed.
-	 * @return false if the bucket was not present.
-	 */
+    /**
+     * Removes a bucket.
+     * 
+     * @param bucket
+     *            the bucket to be removed.
+     * @return false if the bucket was not present.
+     */
 
-	@SuppressWarnings("unchecked")
-	public boolean remove(final T bucket) {
+    @SuppressWarnings("unchecked")
+    public boolean remove(final T bucket) {
 
-		if (!getSizes().containsKey(bucket)) {
-			return false;
-		}
+        if (!getSizes().containsKey(bucket)) {
+            return false;
+        }
 
-		final MersenneTwister twister = new MersenneTwister(bucket.hashCode());
-		final int size = getSizes().remove(bucket);
+        final MersenneTwister twister = new MersenneTwister(bucket.hashCode());
+        final int size = getSizes().remove(bucket);
 
-		long point;
-		Object o;
-		SortedSet<T> conflictSet;
+        long point;
+        Object o;
+        SortedSet<T> conflictSet;
 
-		for (int i = 0; i < size * replicaePerBucket; i++) {
-			point = twister.nextLong();
+        for (int i = 0; i < size * replicaePerBucket; i++) {
+            point = twister.nextLong();
 
-			o = replicae.remove(point);
-			if (o instanceof SortedSet) {
-				if (log.isLoggable(Level.FINEST)) {
-					log.finest(String.format(
-							"Removing %s from conflict set...", point));
-				}
-				conflictSet = (SortedSet<T>) o;
-				conflictSet.remove(bucket);
-				if (conflictSet.size() > 1) {
-					replicae.put(point, conflictSet);
-				} else {
-					replicae.put(point, conflictSet.first());
-				}
-			} else if (o != null && ((T) o).compareTo(bucket) != 0) {
-				replicae.put(point, o);
-			}
-		}
+            o = replicae.remove(point);
+            if (o instanceof SortedSet) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Removing %s from conflict set...",
+                                             point));
+                }
+                conflictSet = (SortedSet<T>) o;
+                conflictSet.remove(bucket);
+                if (conflictSet.size() > 1) {
+                    replicae.put(point, conflictSet);
+                } else {
+                    replicae.put(point, conflictSet.first());
+                }
+            } else if (o != null && ((T) o).compareTo(bucket) != 0) {
+                replicae.put(point, o);
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	public int size() {
-		return buckets.size();
-	}
+    public int size() {
+        return buckets.size();
+    }
 
-	@Override
-	public String toString() {
-		return replicae.toString();
-	}
+    @Override
+    public String toString() {
+        return replicae.toString();
+    }
 }

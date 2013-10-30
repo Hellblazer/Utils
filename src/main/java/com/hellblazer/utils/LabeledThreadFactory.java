@@ -22,19 +22,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  */
 public class LabeledThreadFactory implements ThreadFactory {
-	private final AtomicInteger count = new AtomicInteger(0);
-	private final String prefix;
+    private final AtomicInteger count = new AtomicInteger(0);
+    private final String        prefix;
 
-	public LabeledThreadFactory(String prefix) {
-		this.prefix = prefix;
-	}
+    public LabeledThreadFactory(String prefix) {
+        this.prefix = prefix;
+    }
 
-	@Override
-	public Thread newThread(Runnable runnable) {
-		Thread thread = new Thread(runnable, String.format("%s[%s]", prefix,
-				count.getAndIncrement()));
-		thread.setDaemon(true);
-		return thread;
-	}
+    @Override
+    public Thread newThread(Runnable runnable) {
+        Thread thread = new Thread(runnable,
+                                   String.format("%s[%s]", prefix,
+                                                 count.getAndIncrement()));
+        thread.setDaemon(true);
+        return thread;
+    }
 
 }

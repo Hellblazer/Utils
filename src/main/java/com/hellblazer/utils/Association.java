@@ -18,10 +18,10 @@ import java.io.Serializable;
 
 /**
  * @author hhildebrand
- *
+ * 
  */
 public class Association<K, V> implements Serializable {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     public final K            key;
     public final V            value;
 

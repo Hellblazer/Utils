@@ -31,49 +31,49 @@ import com.hellblazer.utils.collections.RingBuffer;
  * 
  */
 public class RingBufferTest {
-	@Test
-	public void testOffer() {
-		RingBuffer<String> test = new RingBuffer<String>(1000);
-		for (int i = 0; i < 1000; i++) {
-			assertEquals("Invalid size", i, test.size());
-			assertTrue(test.offer(String.format("Offer: %s", i)));
-		}
-		assertEquals("Invalid size", 1000, test.size());
-		assertFalse((test.offer(String.format("Offer: %s", 1001))));
-	}
+    @Test
+    public void testAccordian() {
+        Random r = new Random(0x666);
+        RingBuffer<Integer> test = new RingBuffer<Integer>(1000);
+        for (int i = 0; i < 500; i++) {
+            test.add(i);
+        }
+        int count = test.size();
+        for (int i = 0; i < 10000; i++) {
+            if (r.nextBoolean()) {
+                assertTrue(test.offer(i));
+                count++;
+                assertEquals(count, test.size());
+            } else {
+                assertNotNull(test.poll());
+                count--;
+                assertEquals(count, test.size());
+            }
+        }
+        assertEquals(count, test.size());
+    }
 
-	@Test
-	public void testPoll() {
-		RingBuffer<String> test = new RingBuffer<String>(1000);
-		for (int i = 0; i < 1000; i++) {
-			test.add(String.format("Add: %s", i));
-		}
-		for (int i = 0; i < 1000; i++) {
-			assertEquals("Invalid size", 1000 - i, test.size());
-			assertEquals(String.format("Add: %s", i), test.poll());
-		}
-		assertNull(test.poll());
-	}
+    @Test
+    public void testOffer() {
+        RingBuffer<String> test = new RingBuffer<String>(1000);
+        for (int i = 0; i < 1000; i++) {
+            assertEquals("Invalid size", i, test.size());
+            assertTrue(test.offer(String.format("Offer: %s", i)));
+        }
+        assertEquals("Invalid size", 1000, test.size());
+        assertFalse(test.offer(String.format("Offer: %s", 1001)));
+    }
 
-	@Test
-	public void testAccordian() {
-		Random r = new Random(0x666);
-		RingBuffer<Integer> test = new RingBuffer<Integer>(1000);
-		for (int i = 0; i < 500; i++) {
-			test.add(i);
-		}
-		int count = test.size();
-		for (int i = 0; i < 10000; i++) {
-			if (r.nextBoolean()) {
-				assertTrue(test.offer(i));
-				count++;
-				assertEquals(count, test.size());
-			} else {
-				assertNotNull(test.poll());
-				count--;
-				assertEquals(count, test.size());
-			}
-		}
-		assertEquals(count, test.size());
-	}
+    @Test
+    public void testPoll() {
+        RingBuffer<String> test = new RingBuffer<String>(1000);
+        for (int i = 0; i < 1000; i++) {
+            test.add(String.format("Add: %s", i));
+        }
+        for (int i = 0; i < 1000; i++) {
+            assertEquals("Invalid size", 1000 - i, test.size());
+            assertEquals(String.format("Add: %s", i), test.poll());
+        }
+        assertNull(test.poll());
+    }
 }

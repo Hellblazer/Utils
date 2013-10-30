@@ -27,56 +27,56 @@ import com.hellblazer.utils.Pool.Factory;
  * 
  */
 public class PoolTest {
-	@Test
-	public void testFactory() {
-		final AtomicInteger count = new AtomicInteger(0);
-		Pool<String> test = new Pool<String>("test-me", new Factory<String>() {
-			@Override
-			public String newInstance(Pool<String> pool) {
-				return String.format("created: ", count.incrementAndGet());
-			}
-		}, 100);
+    @Test
+    public void testFactory() {
+        final AtomicInteger count = new AtomicInteger(0);
+        Pool<String> test = new Pool<String>("test-me", new Factory<String>() {
+            @Override
+            public String newInstance(Pool<String> pool) {
+                return String.format("created: ", count.incrementAndGet());
+            }
+        }, 100);
 
-		for (int i = 0; i < 100; i++) {
-			assertEquals(String.format("created: ", i), test.allocate());
-		}
+        for (int i = 0; i < 100; i++) {
+            assertEquals(String.format("created: ", i), test.allocate());
+        }
 
-		assertEquals(100, test.getCreated());
+        assertEquals(100, test.getCreated());
 
-	}
+    }
 
-	@Test
-	public void testFree() {
-		final AtomicInteger count = new AtomicInteger(0);
-		Pool<String> test = new Pool<String>("test-me", new Factory<String>() {
-			@Override
-			public String newInstance(Pool<String> pool) {
-				return String.format("created: ", count.incrementAndGet());
-			}
-		}, 100);
+    @Test
+    public void testFree() {
+        final AtomicInteger count = new AtomicInteger(0);
+        Pool<String> test = new Pool<String>("test-me", new Factory<String>() {
+            @Override
+            public String newInstance(Pool<String> pool) {
+                return String.format("created: ", count.incrementAndGet());
+            }
+        }, 100);
 
-		for (int i = 0; i < 100; i++) {
-			test.free(String.format("freed: ", i));
-		}
-		assertEquals(0, test.getCreated());
-		assertEquals(100, test.getPooled());
+        for (int i = 0; i < 100; i++) {
+            test.free(String.format("freed: ", i));
+        }
+        assertEquals(0, test.getCreated());
+        assertEquals(100, test.getPooled());
 
-		test.free(String.format("freed: ", 100));
+        test.free(String.format("freed: ", 100));
 
-		assertEquals(100, test.getPooled());
-		assertEquals(100, test.size());
-		assertEquals(1, test.getDiscarded());
+        assertEquals(100, test.getPooled());
+        assertEquals(100, test.size());
+        assertEquals(1, test.getDiscarded());
 
-		for (int i = 0; i < 100; i++) {
-			assertEquals(String.format("freed: ", i), test.allocate());
-		}
+        for (int i = 0; i < 100; i++) {
+            assertEquals(String.format("freed: ", i), test.allocate());
+        }
 
-		assertEquals(0, test.size());
-		assertEquals(0, test.getCreated());
+        assertEquals(0, test.size());
+        assertEquals(0, test.getCreated());
 
-		assertEquals(String.format("created: ", 0), test.allocate());
+        assertEquals(String.format("created: ", 0), test.allocate());
 
-		assertEquals(1, test.getCreated());
-		assertEquals(0, test.size());
-	}
+        assertEquals(1, test.getCreated());
+        assertEquals(0, test.size());
+    }
 }

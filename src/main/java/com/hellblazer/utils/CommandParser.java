@@ -25,7 +25,7 @@ import java.util.Properties;
 
 /**
  * @author hhildebrand
- *
+ * 
  */
 public class CommandParser {
 

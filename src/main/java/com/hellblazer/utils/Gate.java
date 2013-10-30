@@ -21,23 +21,23 @@ package com.hellblazer.utils;
  * 
  */
 public class Gate {
-	private int generation;
-	private boolean isOpen;
+    private int     generation;
+    private boolean isOpen;
 
-	public synchronized void await() throws InterruptedException {
-		int arrivalGeneration = generation;
-		while (!isOpen && arrivalGeneration == generation) {
-			wait();
-		}
-	}
+    public synchronized void await() throws InterruptedException {
+        int arrivalGeneration = generation;
+        while (!isOpen && arrivalGeneration == generation) {
+            wait();
+        }
+    }
 
-	public synchronized void close() {
-		isOpen = false;
-	}
+    public synchronized void close() {
+        isOpen = false;
+    }
 
-	public synchronized void open() {
-		++generation;
-		isOpen = true;
-		notifyAll();
-	}
+    public synchronized void open() {
+        ++generation;
+        isOpen = true;
+        notifyAll();
+    }
 }

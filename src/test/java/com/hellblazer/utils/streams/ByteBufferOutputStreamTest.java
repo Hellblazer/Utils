@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import org.junit.Test;
 
 import com.hellblazer.utils.ByteBufferPool;
-import com.hellblazer.utils.streams.ByteBufferOutputStream;
 
 /**
  * @author hhildebrand

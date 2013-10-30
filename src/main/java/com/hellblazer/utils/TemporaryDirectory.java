@@ -25,91 +25,92 @@ import java.io.IOException;
  * 
  */
 public class TemporaryDirectory implements AutoCloseable {
-	public final File directory;
+    public final File directory;
 
-	/**
-	 * Creates a new empty file in the specified directory, using the given
-	 * prefix and suffix strings to generate its name.
-	 * 
-	 * 
-	 * @param prefix
-	 *            The prefix string to be used in generating the file's name;
-	 *            must be at least three characters long
-	 * 
-	 * @param suffix
-	 *            The suffix string to be used in generating the file's name;
-	 *            may be <code>null</code>, in which case the suffix
-	 *            <code>".tmp"</code> will be used
-	 * 
-	 * 
-	 * @throws IllegalArgumentException
-	 *             If the <code>prefix</code> argument contains fewer than three
-	 *             characters
-	 * 
-	 * @throws IOException
-	 *             If a file could not be created
-	 * 
-	 * @throws SecurityException
-	 *             If a security manager exists and its <code>{@link
-	 *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
-	 *             method does not allow a file to be created
-	 * 
-	 * @see java.io.file.File#createTempFile(String, String)
-	 */
-	public TemporaryDirectory(String prefix, String suffix) throws IOException {
-		this(prefix, suffix, null);
-	}
+    /**
+     * Creates a new empty file in the specified directory, using the given
+     * prefix and suffix strings to generate its name.
+     * 
+     * 
+     * @param prefix
+     *            The prefix string to be used in generating the file's name;
+     *            must be at least three characters long
+     * 
+     * @param suffix
+     *            The suffix string to be used in generating the file's name;
+     *            may be <code>null</code>, in which case the suffix
+     *            <code>".tmp"</code> will be used
+     * 
+     * 
+     * @throws IllegalArgumentException
+     *             If the <code>prefix</code> argument contains fewer than three
+     *             characters
+     * 
+     * @throws IOException
+     *             If a file could not be created
+     * 
+     * @throws SecurityException
+     *             If a security manager exists and its <code>{@link
+     *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
+     *             method does not allow a file to be created
+     * 
+     * @see java.io.file.File#createTempFile(String, String)
+     */
+    public TemporaryDirectory(String prefix, String suffix) throws IOException {
+        this(prefix, suffix, null);
+    }
 
-	/**
-	 * Creates a new empty file in the specified directory, using the given
-	 * prefix and suffix strings to generate its name.
-	 * 
-	 * 
-	 * @param prefix
-	 *            The prefix string to be used in generating the file's name;
-	 *            must be at least three characters long
-	 * 
-	 * @param suffix
-	 *            The suffix string to be used in generating the file's name;
-	 *            may be <code>null</code>, in which case the suffix
-	 *            <code>".tmp"</code> will be used
-	 * 
-	 * @param directory
-	 *            The directory in which the file is to be created, or
-	 *            <code>null</code> if the default temporary-file directory is
-	 *            to be used
-	 * 
-	 * 
-	 * @throws IllegalArgumentException
-	 *             If the <code>prefix</code> argument contains fewer than three
-	 *             characters
-	 * 
-	 * @throws IOException
-	 *             If a file could not be created
-	 * 
-	 * @throws SecurityException
-	 *             If a security manager exists and its <code>{@link
-	 *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
-	 *             method does not allow a file to be created
-	 * 
-	 * @see java.io.file.File#createTempFile(String, String, File)
-	 */
-	public TemporaryDirectory(String prefix, String suffix, File dir)
-			throws IOException {
-		directory = File.createTempFile(prefix, suffix, dir);
-		directory.deleteOnExit();
-		Utils.initializeDirectory(directory);
-	}
+    /**
+     * Creates a new empty file in the specified directory, using the given
+     * prefix and suffix strings to generate its name.
+     * 
+     * 
+     * @param prefix
+     *            The prefix string to be used in generating the file's name;
+     *            must be at least three characters long
+     * 
+     * @param suffix
+     *            The suffix string to be used in generating the file's name;
+     *            may be <code>null</code>, in which case the suffix
+     *            <code>".tmp"</code> will be used
+     * 
+     * @param directory
+     *            The directory in which the file is to be created, or
+     *            <code>null</code> if the default temporary-file directory is
+     *            to be used
+     * 
+     * 
+     * @throws IllegalArgumentException
+     *             If the <code>prefix</code> argument contains fewer than three
+     *             characters
+     * 
+     * @throws IOException
+     *             If a file could not be created
+     * 
+     * @throws SecurityException
+     *             If a security manager exists and its <code>{@link
+     *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
+     *             method does not allow a file to be created
+     * 
+     * @see java.io.file.File#createTempFile(String, String, File)
+     */
+    public TemporaryDirectory(String prefix, String suffix, File dir)
+                                                                     throws IOException {
+        directory = File.createTempFile(prefix, suffix, dir);
+        directory.deleteOnExit();
+        Utils.initializeDirectory(directory);
+    }
 
-	@Override
-	public void close() throws Exception {
-		if (directory != null) {
-			Utils.remove(directory);
-		}
-	}
+    @Override
+    public void close() throws Exception {
+        if (directory != null) {
+            Utils.remove(directory);
+        }
+    }
 
-	public String toString() {
-		return String.format("temp dir[%s]", directory);
-	}
+    @Override
+    public String toString() {
+        return String.format("temp dir[%s]", directory);
+    }
 
 }

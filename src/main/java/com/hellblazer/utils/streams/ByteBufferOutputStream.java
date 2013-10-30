@@ -44,9 +44,75 @@ public class ByteBufferOutputStream extends OutputStream {
         buffer = bufferPool.allocate(initialSize);
     }
 
+    /**
+     * Closing a <tt>ByteBufferOutputStream</tt> has no effect. The methods in
+     * this class can be called after the stream has been closed without
+     * generating an <tt>IOException</tt>.
+     * <p>
+     * 
+     */
+    @Override
+    public void close() throws IOException {
+    }
+
+    /**
+     * Resets the <code>count</code> field of this byte buffer output stream to
+     * zero, so that all currently accumulated output in the output stream is
+     * discarded. The output stream can be used again, reusing the already
+     * allocated buffer space.
+     * 
+     * @see java.io.ByteArrayInputStream#count
+     */
+    public void reset() {
+        buffer.rewind();
+    }
+
+    /**
+     * Returns the current size of the buffer.
+     * 
+     * @return the value of the <code>count</code> field, which is the number of
+     *         valid bytes in this output stream.
+     * @see java.io.ByteArrayOutputStream#count
+     */
+    public int size() {
+        return buffer.position();
+    }
+
     public ByteBuffer toByteBuffer() {
         buffer.limit(buffer.position());
         return buffer;
+    }
+
+    /**
+     * Writes <code>len</code> bytes from the specified byte buffer starting at
+     * offset <code>off</code> to this byte buffer output stream.
+     * 
+     * @param b
+     *            the data.
+     * @param off
+     *            the start offset in the data.
+     * @param len
+     *            the number of bytes to write.
+     */
+    @Override
+    public void write(byte b[], int off, int len) {
+        if (off < 0 || off > b.length || len < 0 || off + len - b.length > 0) {
+            throw new IndexOutOfBoundsException();
+        }
+        ensureCapacity(buffer.position() + len);
+        buffer.put(b, off, len);
+    }
+
+    /**
+     * Writes the specified byte to this byte buffer output stream.
+     * 
+     * @param b
+     *            the byte to be written.
+     */
+    @Override
+    public void write(int b) {
+        ensureCapacity(buffer.position() + 1);
+        buffer.put((byte) b);
     }
 
     /**
@@ -93,11 +159,13 @@ public class ByteBufferOutputStream extends OutputStream {
         // overflow-conscious code
         int oldCapacity = buffer.capacity();
         int newCapacity = oldCapacity << 1;
-        if (newCapacity - minCapacity < 0)
+        if (newCapacity - minCapacity < 0) {
             newCapacity = minCapacity;
+        }
         if (newCapacity < 0) {
-            if (minCapacity < 0) // overflow
+            if (minCapacity < 0) {
                 throw new OutOfMemoryError("Math overflow!");
+            }
             newCapacity = Integer.MAX_VALUE;
         }
         assert newCapacity >= minCapacity : "Math is hard";
@@ -107,69 +175,5 @@ public class ByteBufferOutputStream extends OutputStream {
         buffer.put(oldBuffer.array(), 0, position);
         bufferPool.free(oldBuffer);
         assert buffer.capacity() >= minCapacity : "Math is hard";
-    }
-
-    /**
-     * Writes the specified byte to this byte buffer output stream.
-     * 
-     * @param b
-     *            the byte to be written.
-     */
-    public void write(int b) {
-        ensureCapacity(buffer.position() + 1);
-        buffer.put((byte) b);
-    }
-
-    /**
-     * Writes <code>len</code> bytes from the specified byte buffer starting at
-     * offset <code>off</code> to this byte buffer output stream.
-     * 
-     * @param b
-     *            the data.
-     * @param off
-     *            the start offset in the data.
-     * @param len
-     *            the number of bytes to write.
-     */
-    public void write(byte b[], int off, int len) {
-        if ((off < 0) || (off > b.length) || (len < 0)
-            || ((off + len) - b.length > 0)) {
-            throw new IndexOutOfBoundsException();
-        }
-        ensureCapacity(buffer.position() + len);
-        buffer.put(b, off, len);
-    }
-
-    /**
-     * Resets the <code>count</code> field of this byte buffer output stream to
-     * zero, so that all currently accumulated output in the output stream is
-     * discarded. The output stream can be used again, reusing the already
-     * allocated buffer space.
-     * 
-     * @see java.io.ByteArrayInputStream#count
-     */
-    public void reset() {
-        buffer.rewind();
-    }
-
-    /**
-     * Returns the current size of the buffer.
-     * 
-     * @return the value of the <code>count</code> field, which is the number of
-     *         valid bytes in this output stream.
-     * @see java.io.ByteArrayOutputStream#count
-     */
-    public int size() {
-        return buffer.position();
-    }
-
-    /**
-     * Closing a <tt>ByteBufferOutputStream</tt> has no effect. The methods in
-     * this class can be called after the stream has been closed without
-     * generating an <tt>IOException</tt>.
-     * <p>
-     * 
-     */
-    public void close() throws IOException {
     }
 }

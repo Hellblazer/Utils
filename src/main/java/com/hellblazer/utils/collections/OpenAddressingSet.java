@@ -25,12 +25,12 @@ import java.util.NoSuchElementException;
  */
 public abstract class OpenAddressingSet<T> extends AbstractSet<T> {
 
-    private static final Object DELETED = new Object();
-    private static final int PRIME = -1640531527;
-    private static final float THRESHOLD = 0.75f;
-    int load;
-    int size = 0;
-    Object table[];
+    private static final Object DELETED   = new Object();
+    private static final int    PRIME     = -1640531527;
+    private static final float  THRESHOLD = 0.75f;
+    int                         load;
+    int                         size      = 0;
+    Object                      table[];
 
     public OpenAddressingSet() {
         this(4);

@@ -21,8 +21,6 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import com.hellblazer.utils.windows.RunningMedian;
-
 public class RunningMedianTest extends TestCase {
     public void testMedian() {
         Random random = new Random(666);

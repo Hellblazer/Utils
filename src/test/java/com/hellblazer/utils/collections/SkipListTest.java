@@ -19,8 +19,6 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import com.hellblazer.utils.collections.SkipList;
-
 public class SkipListTest extends TestCase {
     public void testCounting() {
         SkipList list = new SkipList();
