@@ -69,7 +69,7 @@ public class HexDump {
     }
 
     public static String hexdump(ByteBuffer src) {
-        return hexdump(src, src.position(), src.limit());
+        return hexdump(src, src.position(), src.remaining());
     }
 
     /**
