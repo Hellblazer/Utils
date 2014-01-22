@@ -33,6 +33,7 @@ import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -42,6 +43,7 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 
@@ -50,744 +52,814 @@ import java.util.zip.ZipFile;
  */
 
 public class Utils {
-	private static enum ParsingState {
-		BRACKET, DOLLAR, PASS_THROUGH
-	}
+    private static enum ParsingState {
+        BRACKET, DOLLAR, PASS_THROUGH
+    }
 
-	public static Object accessField(String fieldName, Object target)
-			throws SecurityException, NoSuchFieldException,
-			IllegalArgumentException, IllegalAccessException {
-		Field field;
-		try {
-			field = target.getClass().getDeclaredField(fieldName);
-		} catch (NoSuchFieldException e) {
-			Class<?> superClass = target.getClass().getSuperclass();
-			if (superClass == null) {
-				throw e;
-			}
-			return accessField(fieldName, target, superClass);
-		}
-		field.setAccessible(true);
-		return field.get(target);
-	}
+    public static Object accessField(String fieldName, Object target)
+                                                                     throws SecurityException,
+                                                                     NoSuchFieldException,
+                                                                     IllegalArgumentException,
+                                                                     IllegalAccessException {
+        Field field;
+        try {
+            field = target.getClass().getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            Class<?> superClass = target.getClass().getSuperclass();
+            if (superClass == null) {
+                throw e;
+            }
+            return accessField(fieldName, target, superClass);
+        }
+        field.setAccessible(true);
+        return field.get(target);
+    }
 
-	public static Object accessField(String fieldName, Object target,
-			Class<?> targetClass) throws SecurityException,
-			NoSuchFieldException, IllegalArgumentException,
-			IllegalAccessException {
-		Field field;
-		try {
-			field = targetClass.getDeclaredField(fieldName);
-		} catch (NoSuchFieldException e) {
-			Class<?> superClass = targetClass.getSuperclass();
-			if (superClass == null) {
-				throw e;
-			}
-			return accessField(fieldName, target, superClass);
-		}
-		field.setAccessible(true);
-		return field.get(target);
-	}
+    public static Object accessField(String fieldName, Object target,
+                                     Class<?> targetClass)
+                                                          throws SecurityException,
+                                                          NoSuchFieldException,
+                                                          IllegalArgumentException,
+                                                          IllegalAccessException {
+        Field field;
+        try {
+            field = targetClass.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            Class<?> superClass = targetClass.getSuperclass();
+            if (superClass == null) {
+                throw e;
+            }
+            return accessField(fieldName, target, superClass);
+        }
+        field.setAccessible(true);
+        return field.get(target);
+    }
 
-	/**
-	 * Find a free port for any local address
-	 * 
-	 * @return the port number or -1 if none available
-	 */
-	public static int allocatePort() {
-		return allocatePort(null);
-	}
+    /**
+     * Find a free port for any local address
+     * 
+     * @return the port number or -1 if none available
+     */
+    public static int allocatePort() {
+        return allocatePort(null);
+    }
 
-	/**
-	 * Find a free port on the interface with the given local address
-	 * 
-	 * @return the port number or -1 if none available
-	 */
-	public static int allocatePort(InetAddress host) {
-		InetSocketAddress address = host == null ? new InetSocketAddress(0)
-				: new InetSocketAddress(host, 0);
-		try (ServerSocket socket = new ServerSocket();) {
+    /**
+     * Find a free port on the interface with the given local address
+     * 
+     * @return the port number or -1 if none available
+     */
+    public static int allocatePort(InetAddress host) {
+        InetSocketAddress address = host == null ? new InetSocketAddress(0)
+                                                : new InetSocketAddress(host, 0);
+        try (ServerSocket socket = new ServerSocket();) {
 
-			socket.bind(address);
-			return socket.getLocalPort();
-		} catch (IOException e) {
-		}
-		return -1;
-	}
+            socket.bind(address);
+            return socket.getLocalPort();
+        } catch (IOException e) {
+        }
+        return -1;
+    }
 
-	public static void copy(File sourceFile, File destFile) throws IOException {
-		copy(sourceFile, destFile, 4096);
-	}
+    public static void copy(File sourceFile, File destFile) throws IOException {
+        copy(sourceFile, destFile, 4096);
+    }
 
-	/**
-	 * Copy the contents of the source file into the destination file using the
-	 * supplied buffer
-	 * 
-	 * @param sourceFile
-	 * @param destFile
-	 * @param buffer
-	 * @throws IOException
-	 */
-	public static void copy(File sourceFile, File destFile, byte[] buffer)
-			throws IOException {
-		try (InputStream is = new FileInputStream(sourceFile);
-				OutputStream os = new FileOutputStream(destFile);) {
-			copy(is, os, buffer);
-		}
-	}
+    /**
+     * Copy the contents of the source file into the destination file using the
+     * supplied buffer
+     * 
+     * @param sourceFile
+     * @param destFile
+     * @param buffer
+     * @throws IOException
+     */
+    public static void copy(File sourceFile, File destFile, byte[] buffer)
+                                                                          throws IOException {
+        try (InputStream is = new FileInputStream(sourceFile);
+                OutputStream os = new FileOutputStream(destFile);) {
+            copy(is, os, buffer);
+        }
+    }
 
-	/**
-	 * Copy the contents of the source file into the destination file using a
-	 * buffer of the supplied size
-	 * 
-	 * @param sourceFile
-	 * @param destFile
-	 * @param bufferSize
-	 * @throws IOException
-	 */
-	public static void copy(File sourceFile, File destFile, int bufferSize)
-			throws IOException {
-		copy(sourceFile, destFile, new byte[bufferSize]);
-	}
+    /**
+     * Copy the contents of the source file into the destination file using a
+     * buffer of the supplied size
+     * 
+     * @param sourceFile
+     * @param destFile
+     * @param bufferSize
+     * @throws IOException
+     */
+    public static void copy(File sourceFile, File destFile, int bufferSize)
+                                                                           throws IOException {
+        copy(sourceFile, destFile, new byte[bufferSize]);
+    }
 
-	/**
-	 * 
-	 * Copy and transform the zip entry to the destination. If the
-	 * transformation extensions contains the entry's extension, then ${xxx}
-	 * style parameters are replace with the supplied properties or
-	 * System.getProperties()
-	 * 
-	 * @param dest
-	 * @param zf
-	 * @param ze
-	 * @param extensions
-	 * @param properties
-	 * @throws IOException
-	 */
-	public static void copy(File dest, ZipFile zf, ZipEntry ze,
-			Map<String, String> properties, Collection<String> extensions)
-			throws IOException {
-		InputStream is = zf.getInputStream(ze);
-		try {
-			File outFile = new File(dest, ze.getName());
-			if (ze.isDirectory()) {
-				outFile.mkdirs();
-			} else {
-				File parent = outFile.getParentFile();
-				if (parent != null) {
-					parent.mkdirs();
-				}
-				FileOutputStream fos = new FileOutputStream(outFile);
-				try {
-					if (extensions.contains(getExtension(outFile.getName()))) {
-						replaceProperties(is, fos, properties);
-					} else {
-						copy(is, fos);
-					}
-				} finally {
-					try {
-						fos.close();
-					} catch (IOException ioe) {
-					}
-				}
-			}
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				Logger.getAnonymousLogger().log(Level.FINE,
-						String.format("Error closing %s", ze), e);
-			}
-		}
-	}
+    /**
+     * 
+     * Copy and transform the zip entry to the destination. If the
+     * transformation extensions contains the entry's extension, then ${xxx}
+     * style parameters are replace with the supplied properties or
+     * System.getProperties()
+     * 
+     * @param dest
+     * @param zf
+     * @param ze
+     * @param extensions
+     * @param properties
+     * @throws IOException
+     */
+    public static void copy(File dest, ZipFile zf, ZipEntry ze,
+                            Map<String, String> properties,
+                            Collection<String> extensions) throws IOException {
+        InputStream is = zf.getInputStream(ze);
+        try {
+            File outFile = new File(dest, ze.getName());
+            if (ze.isDirectory()) {
+                outFile.mkdirs();
+            } else {
+                File parent = outFile.getParentFile();
+                if (parent != null) {
+                    parent.mkdirs();
+                }
+                FileOutputStream fos = new FileOutputStream(outFile);
+                try {
+                    if (extensions.contains(getExtension(outFile.getName()))) {
+                        replaceProperties(is, fos, properties);
+                    } else {
+                        copy(is, fos);
+                    }
+                } finally {
+                    try {
+                        fos.close();
+                    } catch (IOException ioe) {
+                    }
+                }
+            }
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                Logger.getAnonymousLogger().log(Level.FINE,
+                                                String.format("Error closing %s",
+                                                              ze), e);
+            }
+        }
+    }
 
-	/**
-	 * Copy the contents of the input stream into the output stream using the
-	 * default buffer size
-	 * 
-	 * @param is
-	 * @param os
-	 * @throws IOException
-	 */
-	public static void copy(InputStream is, OutputStream os) throws IOException {
-		copy(is, os, 4096);
-	}
+    /**
+     * Copy the contents of the input stream into the output stream using the
+     * default buffer size
+     * 
+     * @param is
+     * @param os
+     * @throws IOException
+     */
+    public static void copy(InputStream is, OutputStream os) throws IOException {
+        copy(is, os, 4096);
+    }
 
-	/**
-	 * Copy the contents of the input stream to the output stream. It is the
-	 * caller's responsibility to close the streams.
-	 * 
-	 * @param is
-	 *            - source
-	 * @param os
-	 *            - destination
-	 * @param buffer
-	 *            - byte buffer to use
-	 * @throws IOException
-	 */
-	public static void copy(InputStream is, OutputStream os, byte[] buffer)
-			throws IOException {
-		int len;
-		while ((len = is.read(buffer)) > 0) {
-			os.write(buffer, 0, len);
-		}
-	}
+    /**
+     * Copy the contents of the input stream to the output stream. It is the
+     * caller's responsibility to close the streams.
+     * 
+     * @param is
+     *            - source
+     * @param os
+     *            - destination
+     * @param buffer
+     *            - byte buffer to use
+     * @throws IOException
+     */
+    public static void copy(InputStream is, OutputStream os, byte[] buffer)
+                                                                           throws IOException {
+        int len;
+        while ((len = is.read(buffer)) > 0) {
+            os.write(buffer, 0, len);
+        }
+    }
 
-	/**
-	 * Copy the contents of the input stream to the output stream. It is the
-	 * caller's responsibility to close the streams.
-	 * 
-	 * @param is
-	 *            - source
-	 * @param os
-	 *            - destination
-	 * @param bufferSize
-	 *            - buffer size to use
-	 * @throws IOException
-	 */
-	public static void copy(InputStream is, OutputStream os, int bufferSize)
-			throws IOException {
-		copy(is, os, new byte[bufferSize]);
-	}
+    /**
+     * Copy the contents of the input stream to the output stream. It is the
+     * caller's responsibility to close the streams.
+     * 
+     * @param is
+     *            - source
+     * @param os
+     *            - destination
+     * @param bufferSize
+     *            - buffer size to use
+     * @throws IOException
+     */
+    public static void copy(InputStream is, OutputStream os, int bufferSize)
+                                                                            throws IOException {
+        copy(is, os, new byte[bufferSize]);
+    }
 
-	/**
-	 * Replicate the entire contents of the source directory to the target
-	 * directory
-	 * 
-	 * @param sourceLocation
-	 *            - must be a directory and must exist
-	 * @param targetLocation
-	 *            - if exists, must be a directory. Will be created with full
-	 *            paths if does not exist
-	 * @throws IOException
-	 */
-	public static void copyDirectory(File sourceLocation, File targetLocation)
-			throws IOException {
+    /**
+     * Replicate the entire contents of the source directory to the target
+     * directory
+     * 
+     * @param sourceLocation
+     *            - must be a directory and must exist
+     * @param targetLocation
+     *            - if exists, must be a directory. Will be created with full
+     *            paths if does not exist
+     * @throws IOException
+     */
+    public static void copyDirectory(File sourceLocation, File targetLocation)
+                                                                              throws IOException {
 
-		if (sourceLocation.isDirectory()) {
-			if (!targetLocation.exists()) {
-				if (!targetLocation.mkdirs()) {
-					throw new IllegalArgumentException(String.format(
-							"Cannot create directory [%s]",
-							targetLocation.getAbsolutePath()));
-				}
-			} else if (targetLocation.isFile()) {
-				throw new IllegalArgumentException(String.format(
-						"Target location must be a directory [%s]",
-						targetLocation.getAbsolutePath()));
-			}
+        if (sourceLocation.isDirectory()) {
+            if (!targetLocation.exists()) {
+                if (!targetLocation.mkdirs()) {
+                    throw new IllegalArgumentException(
+                                                       String.format("Cannot create directory [%s]",
+                                                                     targetLocation.getAbsolutePath()));
+                }
+            } else if (targetLocation.isFile()) {
+                throw new IllegalArgumentException(
+                                                   String.format("Target location must be a directory [%s]",
+                                                                 targetLocation.getAbsolutePath()));
+            }
 
-			String[] children = sourceLocation.list();
-			for (String element : children) {
-				File child = new File(sourceLocation, element);
-				File targetChild = new File(targetLocation, element);
-				if (child.isDirectory()) {
-					copyDirectory(child, targetChild);
-				} else {
-					copy(child, targetChild);
-				}
-			}
-		} else {
-			throw new IllegalArgumentException(
-					String.format("[%s] is not a directory",
-							sourceLocation.getAbsolutePath()));
-		}
-	}
+            String[] children = sourceLocation.list();
+            for (String element : children) {
+                File child = new File(sourceLocation, element);
+                File targetChild = new File(targetLocation, element);
+                if (child.isDirectory()) {
+                    copyDirectory(child, targetChild);
+                } else {
+                    copy(child, targetChild);
+                }
+            }
+        } else {
+            throw new IllegalArgumentException(
+                                               String.format("[%s] is not a directory",
+                                                             sourceLocation.getAbsolutePath()));
+        }
+    }
 
-	/**
-	 * Expand the zip resource into the destination, replacing any ${propName}
-	 * style properties with the corresponding values in the substitutions map
-	 * 
-	 * @param zip
-	 *            - the zip file to expand
-	 * @param extensions
-	 *            - the list of file extensions targeted for property
-	 *            substitution
-	 * @param substitutions
-	 *            - the map of substitutions
-	 * @param destination
-	 *            - the destination directory for the expansion
-	 * 
-	 * @throws IOException
-	 * @throws ZipException
-	 */
-	public static void expandAndReplace(File zip, File dest,
-			Map<String, String> substitutions, Collection<String> extensions)
-			throws ZipException, IOException {
-		initializeDirectory(dest);
-		if (!dest.exists() && !dest.mkdir()) {
-			throw new IOException(String.format(
-					"Cannot create destination directory: %s",
-					dest.getAbsolutePath()));
-		}
-		ZipFile zippy = new ZipFile(zip);
-		Enumeration<?> e = zippy.entries();
-		while (e.hasMoreElements()) {
-			ZipEntry ze = (ZipEntry) e.nextElement();
-			expandAndReplace(dest, zippy, ze, substitutions, extensions);
-		}
-	}
+    /**
+     * Create a zip from the contents of a directory.
+     * 
+     * @param directory
+     *            - the root of the zip contents
+     * @param os
+     *            - the output stream to create the zip with
+     * @throws IOException
+     *             - if anything goes wrong
+     */
+    public static void createZip(File directory, OutputStream os)
+                                                                 throws IOException {
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException(
+                                               String.format("%s is not a directory",
+                                                             directory));
+        }
+        ZipOutputStream zos = new ZipOutputStream(os);
+        File[] files = directory.listFiles();
+        if (files != null) {
 
-	/**
-	 * 
-	 * Copy and transform the zip entry to the destination. If the
-	 * transformation extensions contains the entry's extension, then ${xxx}
-	 * style parameters are replace with the supplied properties or
-	 * System.getProperties()
-	 * 
-	 * @param dest
-	 * @param zf
-	 * @param ze
-	 * @param extensions
-	 * @param properties
-	 * @throws IOException
-	 */
-	public static void expandAndReplace(File dest, ZipFile zf, ZipEntry ze,
-			Map<String, String> properties, Collection<String> extensions)
-			throws IOException {
+        }
+        File root = directory.getAbsoluteFile();
+        for (File file : directory.listFiles()) {
+            addToZip(root, file, zos);
+        }
+        zos.finish();
+        zos.flush();
+    }
 
-		try (InputStream is = zf.getInputStream(ze);) {
-			File outFile = new File(dest, ze.getName());
-			if (ze.isDirectory()) {
-				outFile.mkdirs();
-			} else {
-				transform(properties, extensions, is, outFile);
-			}
-		}
-	}
+    /**
+     * Expand the zip resource into the destination, replacing any ${propName}
+     * style properties with the corresponding values in the substitutions map
+     * 
+     * @param zip
+     *            - the zip file to expand
+     * @param extensions
+     *            - the list of file extensions targeted for property
+     *            substitution
+     * @param substitutions
+     *            - the map of substitutions
+     * @param destination
+     *            - the destination directory for the expansion
+     * 
+     * @throws IOException
+     * @throws ZipException
+     */
+    public static void expandAndReplace(File zip, File dest,
+                                        Map<String, String> substitutions,
+                                        Collection<String> extensions)
+                                                                      throws ZipException,
+                                                                      IOException {
+        initializeDirectory(dest);
+        if (!dest.exists() && !dest.mkdir()) {
+            throw new IOException(
+                                  String.format("Cannot create destination directory: %s",
+                                                dest.getAbsolutePath()));
+        }
+        ZipFile zippy = new ZipFile(zip);
+        Enumeration<?> e = zippy.entries();
+        while (e.hasMoreElements()) {
+            ZipEntry ze = (ZipEntry) e.nextElement();
+            expandAndReplace(dest, zippy, ze, substitutions, extensions);
+        }
+    }
 
-	/**
-	 * Provision the configured process directory from the zip resource
-	 * 
-	 * @param zip
-	 * @param extensions
-	 * @param map
-	 * @param destination
-	 * 
-	 * @throws IOException
-	 * @throws ZipException
-	 */
-	public static void explode(File zip, File dest, Map<String, String> map,
-			Collection<String> extensions) throws ZipException, IOException {
-		initializeDirectory(dest);
-		if (!dest.exists() && !dest.mkdir()) {
-			throw new IOException(String.format(
-					"Cannot create destination directory: %s",
-					dest.getAbsolutePath()));
-		}
-		ZipFile zippy = new ZipFile(zip);
-		Enumeration<?> e = zippy.entries();
-		while (e.hasMoreElements()) {
-			ZipEntry ze = (ZipEntry) e.nextElement();
-			copy(dest, zippy, ze, map, extensions);
-		}
-	}
+    /**
+     * 
+     * Copy and transform the zip entry to the destination. If the
+     * transformation extensions contains the entry's extension, then ${xxx}
+     * style parameters are replace with the supplied properties or
+     * System.getProperties()
+     * 
+     * @param dest
+     * @param zf
+     * @param ze
+     * @param extensions
+     * @param properties
+     * @throws IOException
+     */
+    public static void expandAndReplace(File dest, ZipFile zf, ZipEntry ze,
+                                        Map<String, String> properties,
+                                        Collection<String> extensions)
+                                                                      throws IOException {
 
-	/**
-	 * Answer the byte array containing the contents of the file
-	 * 
-	 * @param file
-	 * @return
-	 * @throws IOException
-	 */
-	public static byte[] getBits(File file) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		InputStream fis = new FileInputStream(file);
-		copy(fis, baos);
-		return baos.toByteArray();
-	}
+        try (InputStream is = zf.getInputStream(ze);) {
+            File outFile = new File(dest, ze.getName());
+            if (ze.isDirectory()) {
+                outFile.mkdirs();
+            } else {
+                transform(properties, extensions, is, outFile);
+            }
+        }
+    }
 
-	/**
-	 * Answer the string representation of the document
-	 * 
-	 * @param openStream
-	 *            - ye olde stream
-	 * @return the string the stream represents
-	 * @throws IOException
-	 *             - if we're boned
-	 */
-	public static String getDocument(InputStream is) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte[] buffer = new byte[16 * 1024];
-		for (int read = is.read(buffer); read > 0; read = is.read(buffer)) {
-			baos.write(buffer, 0, read);
-		}
-		return baos.toString();
-	}
+    /**
+     * Provision the configured process directory from the zip resource
+     * 
+     * @param zip
+     * @param extensions
+     * @param map
+     * @param destination
+     * 
+     * @throws IOException
+     * @throws ZipException
+     */
+    public static void explode(File zip, File dest, Map<String, String> map,
+                               Collection<String> extensions)
+                                                             throws ZipException,
+                                                             IOException {
+        initializeDirectory(dest);
+        if (!dest.exists() && !dest.mkdir()) {
+            throw new IOException(
+                                  String.format("Cannot create destination directory: %s",
+                                                dest.getAbsolutePath()));
+        }
+        ZipFile zippy = new ZipFile(zip);
+        Enumeration<?> e = zippy.entries();
+        while (e.hasMoreElements()) {
+            ZipEntry ze = (ZipEntry) e.nextElement();
+            copy(dest, zippy, ze, map, extensions);
+        }
+    }
 
-	/**
-	 * Answer the extension of the file
-	 * 
-	 * @param file
-	 * @return
-	 */
-	public static String getExtension(File file) {
-		String name = file.getName();
-		int index = name.lastIndexOf('.');
-		if (index == -1) {
-			return "";
-		}
-		return name.substring(index + 1);
-	}
+    /**
+     * Answer the byte array containing the contents of the file
+     * 
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static byte[] getBits(File file) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        InputStream fis = new FileInputStream(file);
+        copy(fis, baos);
+        return baos.toByteArray();
+    }
 
-	/**
-	 * Answer the extension of the file
-	 * 
-	 * @param file
-	 * @return
-	 */
-	public static String getExtension(String file) {
-		int index = file.lastIndexOf('.');
-		if (index == -1) {
-			return "";
-		}
-		return file.substring(index + 1);
-	}
+    /**
+     * Answer the string representation of the document
+     * 
+     * @param openStream
+     *            - ye olde stream
+     * @return the string the stream represents
+     * @throws IOException
+     *             - if we're boned
+     */
+    public static String getDocument(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[16 * 1024];
+        for (int read = is.read(buffer); read > 0; read = is.read(buffer)) {
+            baos.write(buffer, 0, read);
+        }
+        return baos.toString();
+    }
 
-	/**
-	 * Answer the extension of the file
-	 * 
-	 * @param file
-	 * @return
-	 */
-	public static String getNameWithoutExtension(File file) {
-		String name = file.getName();
-		int index = name.lastIndexOf('.');
-		if (index == -1) {
-			return "";
-		}
-		return name.substring(0, index);
-	}
+    /**
+     * Answer the extension of the file
+     * 
+     * @param file
+     * @return
+     */
+    public static String getExtension(File file) {
+        String name = file.getName();
+        int index = name.lastIndexOf('.');
+        if (index == -1) {
+            return "";
+        }
+        return name.substring(index + 1);
+    }
 
-	/**
-	 * Answer the string representation of the inputstream
-	 * 
-	 * @param openStream
-	 *            - ye olde stream
-	 * @return the string the stream represents
-	 * @throws IOException
-	 *             - if we're boned
-	 */
-	public static String getString(InputStream is) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		copy(is, baos);
-		return baos.toString();
-	}
+    /**
+     * Answer the extension of the file
+     * 
+     * @param file
+     * @return
+     */
+    public static String getExtension(String file) {
+        int index = file.lastIndexOf('.');
+        if (index == -1) {
+            return "";
+        }
+        return file.substring(index + 1);
+    }
 
-	/**
-	 * Remove and reinitialze the directory. The directory and full paths will
-	 * be created if it does not exist
-	 * 
-	 * @param directory
-	 */
-	public static void initializeDirectory(File directory) {
-		remove(directory);
-		if (!directory.mkdirs()) {
-			throw new IllegalStateException("Cannot create directtory: "
-					+ directory);
-		}
-	}
+    /**
+     * Answer the extension of the file
+     * 
+     * @param file
+     * @return
+     */
+    public static String getNameWithoutExtension(File file) {
+        String name = file.getName();
+        int index = name.lastIndexOf('.');
+        if (index == -1) {
+            return "";
+        }
+        return name.substring(0, index);
+    }
 
-	/**
-	 * Remove and reinitialze the directory. The directory and full paths will
-	 * be created if it does not exist
-	 * 
-	 * @param dir
-	 */
-	public static void initializeDirectory(String dir) {
-		initializeDirectory(new File(dir));
-	}
+    /**
+     * Answer the string representation of the inputstream
+     * 
+     * @param openStream
+     *            - ye olde stream
+     * @return the string the stream represents
+     * @throws IOException
+     *             - if we're boned
+     */
+    public static String getString(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        copy(is, baos);
+        return baos.toString();
+    }
 
-	/**
-	 * Answer true if the io exception is a form of a closed connection
-	 * 
-	 * @param ioe
-	 * @return
-	 */
-	public static boolean isClosedConnection(IOException ioe) {
-		return ioe instanceof ClosedChannelException
-				|| "Broken pipe".equals(ioe.getMessage())
-				|| "Connection reset by peer".equals(ioe.getMessage());
-	}
+    /**
+     * Remove and reinitialze the directory. The directory and full paths will
+     * be created if it does not exist
+     * 
+     * @param directory
+     */
+    public static void initializeDirectory(File directory) {
+        remove(directory);
+        if (!directory.mkdirs()) {
+            throw new IllegalStateException("Cannot create directtory: "
+                                            + directory);
+        }
+    }
 
-	/**
-	 * Remove the file. If the file is a directory, the entire contents will be
-	 * recursively removed.
-	 * 
-	 * @param directoryOrFile
-	 */
-	public static void remove(File directoryOrFile) {
-		if (directoryOrFile.exists()) {
-			if (directoryOrFile.isDirectory()) {
-				for (File file : directoryOrFile.listFiles()) {
-					if (file.isDirectory()) {
-						remove(file);
-					} else {
-						if (!file.delete()) {
-							throw new IllegalStateException(String.format(
-									"Cannot delete [%s] ", file));
-						}
-					}
-				}
-			}
-			if (!directoryOrFile.delete()) {
-				throw new IllegalStateException(String.format(
-						"Cannot delete [%s] ", directoryOrFile));
-			}
-		}
-	}
+    /**
+     * Remove and reinitialze the directory. The directory and full paths will
+     * be created if it does not exist
+     * 
+     * @param dir
+     */
+    public static void initializeDirectory(String dir) {
+        initializeDirectory(new File(dir));
+    }
 
-	/**
-	 * Go through the input stream and replace any occurance of ${p} with the
-	 * props.get(p) value. If there is no such property p defined, then the ${p}
-	 * reference will remain unchanged.
-	 * 
-	 * If the property reference is of the form ${p:v} and there is no such
-	 * property p, then the default value v will be returned.
-	 * 
-	 * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
-	 * primary and the secondary properties will be tried in turn, before
-	 * returning either the unchanged input, or the default value.
-	 * 
-	 * @param in
-	 *            - the file with possible ${x} references
-	 * @param out
-	 *            - the file output for the transformed input
-	 * @param props
-	 *            - the source for ${x} property ref values, null means use
-	 *            System.getProperty()
-	 * @throws IOException
-	 */
-	public static void replaceProperties(File in, File out,
-			Map<String, String> props) throws IOException {
-		try (InputStream is = new FileInputStream(in);
-				OutputStream os = new FileOutputStream(out);) {
+    /**
+     * Answer true if the io exception is a form of a closed connection
+     * 
+     * @param ioe
+     * @return
+     */
+    public static boolean isClosedConnection(IOException ioe) {
+        return ioe instanceof ClosedChannelException
+               || "Broken pipe".equals(ioe.getMessage())
+               || "Connection reset by peer".equals(ioe.getMessage());
+    }
 
-			replaceProperties(is, os, props);
-		}
-	}
+    public static File relativize(File parent, File child) {
+        URI base = parent.toURI();
+        URI absolute = child.toURI();
+        URI relative = base.relativize(absolute);
+        return new File(relative.getPath());
+    }
 
-	/**
-	 * Go through the input stream and replace any occurance of ${p} with the
-	 * props.get(p) value. If there is no such property p defined, then the ${p}
-	 * reference will remain unchanged.
-	 * 
-	 * If the property reference is of the form ${p:v} and there is no such
-	 * property p, then the default value v will be returned.
-	 * 
-	 * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
-	 * primary and the secondary properties will be tried in turn, before
-	 * returning either the unchanged input, or the default value.
-	 * 
-	 * @param in
-	 *            - the stream with possible ${x} references
-	 * @param out
-	 *            - the output for the transformed input
-	 * @param props
-	 *            - the source for ${x} property ref values, null means use
-	 *            System.getProperty()
-	 */
-	public static void replaceProperties(final InputStream in,
-			final OutputStream out, final Map<String, String> props)
-			throws IOException {
-		Reader reader = new BufferedReader(new InputStreamReader(in));
-		Writer writer = new BufferedWriter(new OutputStreamWriter(out));
-		ParsingState state = ParsingState.PASS_THROUGH;
+    /**
+     * Remove the file. If the file is a directory, the entire contents will be
+     * recursively removed.
+     * 
+     * @param directoryOrFile
+     */
+    public static void remove(File directoryOrFile) {
+        if (directoryOrFile.exists()) {
+            if (directoryOrFile.isDirectory()) {
+                for (File file : directoryOrFile.listFiles()) {
+                    if (file.isDirectory()) {
+                        remove(file);
+                    } else {
+                        if (!file.delete()) {
+                            throw new IllegalStateException(
+                                                            String.format("Cannot delete [%s] ",
+                                                                          file));
+                        }
+                    }
+                }
+            }
+            if (!directoryOrFile.delete()) {
+                throw new IllegalStateException(
+                                                String.format("Cannot delete [%s] ",
+                                                              directoryOrFile));
+            }
+        }
+    }
 
-		StringBuffer keyBuffer = null;
-		for (int next = reader.read(); next != -1; next = reader.read()) {
-			char c = (char) next;
-			switch (state) {
-			case PASS_THROUGH: {
-				if (c == '$') {
-					state = ParsingState.DOLLAR;
-				} else {
-					writer.append(c);
-				}
-				break;
-			}
-			case DOLLAR: {
-				if (c == '{') {
-					state = ParsingState.BRACKET;
-					keyBuffer = new StringBuffer();
-				} else if (c == '$') {
-					writer.append('$'); // just saw $$
-				} else {
-					state = ParsingState.PASS_THROUGH;
-					writer.append('$');
-					writer.append(c);
-				}
-				break;
-			}
-			case BRACKET: {
-				if (c == '}') {
-					state = ParsingState.PASS_THROUGH;
-					if (keyBuffer.length() == 0) {
-						writer.append("${}");
-					} else {
-						String value = null;
-						String key = keyBuffer.toString();
-						value = findValue(key, props);
+    /**
+     * Go through the input stream and replace any occurance of ${p} with the
+     * props.get(p) value. If there is no such property p defined, then the ${p}
+     * reference will remain unchanged.
+     * 
+     * If the property reference is of the form ${p:v} and there is no such
+     * property p, then the default value v will be returned.
+     * 
+     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
+     * primary and the secondary properties will be tried in turn, before
+     * returning either the unchanged input, or the default value.
+     * 
+     * @param in
+     *            - the file with possible ${x} references
+     * @param out
+     *            - the file output for the transformed input
+     * @param props
+     *            - the source for ${x} property ref values, null means use
+     *            System.getProperty()
+     * @throws IOException
+     */
+    public static void replaceProperties(File in, File out,
+                                         Map<String, String> props)
+                                                                   throws IOException {
+        try (InputStream is = new FileInputStream(in);
+                OutputStream os = new FileOutputStream(out);) {
 
-						if (value != null) {
-							writer.append(value);
-						} else {
-							writer.append("${");
-							writer.append(key);
-							writer.append('}');
-						}
-					}
-					keyBuffer = null;
-				} else if (c == '$') {
-					// We're inside of a ${ already, so bail and reset
-					state = ParsingState.DOLLAR;
-					writer.append("${");
-					writer.append(keyBuffer.toString());
-					keyBuffer = null;
-				} else {
-					keyBuffer.append(c);
-				}
-			}
-			}
-		}
-		writer.flush();
-	}
+            replaceProperties(is, os, props);
+        }
+    }
 
-	public static boolean waitForCondition(int maxWaitTime, Condition condition) {
-		return waitForCondition(maxWaitTime, 100, condition);
-	}
+    /**
+     * Go through the input stream and replace any occurance of ${p} with the
+     * props.get(p) value. If there is no such property p defined, then the ${p}
+     * reference will remain unchanged.
+     * 
+     * If the property reference is of the form ${p:v} and there is no such
+     * property p, then the default value v will be returned.
+     * 
+     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then the
+     * primary and the secondary properties will be tried in turn, before
+     * returning either the unchanged input, or the default value.
+     * 
+     * @param in
+     *            - the stream with possible ${x} references
+     * @param out
+     *            - the output for the transformed input
+     * @param props
+     *            - the source for ${x} property ref values, null means use
+     *            System.getProperty()
+     */
+    public static void replaceProperties(final InputStream in,
+                                         final OutputStream out,
+                                         final Map<String, String> props)
+                                                                         throws IOException {
+        Reader reader = new BufferedReader(new InputStreamReader(in));
+        Writer writer = new BufferedWriter(new OutputStreamWriter(out));
+        ParsingState state = ParsingState.PASS_THROUGH;
 
-	public static boolean waitForCondition(int maxWaitTime,
-			final int sleepTime, Condition condition) {
-		long endTime = System.currentTimeMillis() + maxWaitTime;
-		while (System.currentTimeMillis() < endTime) {
-			if (condition.isTrue()) {
-				return true;
-			}
-			try {
-				Thread.sleep(sleepTime);
-			} catch (InterruptedException e) {
-				// do nothing
-			}
-		}
-		return false;
-	}
+        StringBuffer keyBuffer = null;
+        for (int next = reader.read(); next != -1; next = reader.read()) {
+            char c = (char) next;
+            switch (state) {
+                case PASS_THROUGH: {
+                    if (c == '$') {
+                        state = ParsingState.DOLLAR;
+                    } else {
+                        writer.append(c);
+                    }
+                    break;
+                }
+                case DOLLAR: {
+                    if (c == '{') {
+                        state = ParsingState.BRACKET;
+                        keyBuffer = new StringBuffer();
+                    } else if (c == '$') {
+                        writer.append('$'); // just saw $$
+                    } else {
+                        state = ParsingState.PASS_THROUGH;
+                        writer.append('$');
+                        writer.append(c);
+                    }
+                    break;
+                }
+                case BRACKET: {
+                    if (c == '}') {
+                        state = ParsingState.PASS_THROUGH;
+                        if (keyBuffer.length() == 0) {
+                            writer.append("${}");
+                        } else {
+                            String value = null;
+                            String key = keyBuffer.toString();
+                            value = findValue(key, props);
 
-	/**
-	 * Transform the contents of the input stream, replacing any ${p} values in
-	 * the stream with the value in the supplied properties. The transformed
-	 * contents are placed in the supplied output file.
-	 * 
-	 * @param properties
-	 * @param extensions
-	 * @param is
-	 * @param outFile
-	 * @throws FileNotFoundException
-	 * @throws IOException
-	 */
-	private static void transform(Map<String, String> properties,
-			Collection<String> extensions, InputStream is, File outFile)
-			throws FileNotFoundException, IOException {
-		File parent = outFile.getParentFile();
-		if (parent != null) {
-			parent.mkdirs();
-		}
+                            if (value != null) {
+                                writer.append(value);
+                            } else {
+                                writer.append("${");
+                                writer.append(key);
+                                writer.append('}');
+                            }
+                        }
+                        keyBuffer = null;
+                    } else if (c == '$') {
+                        // We're inside of a ${ already, so bail and reset
+                        state = ParsingState.DOLLAR;
+                        writer.append("${");
+                        writer.append(keyBuffer.toString());
+                        keyBuffer = null;
+                    } else {
+                        keyBuffer.append(c);
+                    }
+                }
+            }
+        }
+        writer.flush();
+    }
 
-		try (FileOutputStream fos = new FileOutputStream(outFile);) {
-			if (extensions.contains(getExtension(outFile.getName()))) {
-				replaceProperties(is, fos, properties);
-			} else {
-				copy(is, fos);
-			}
-		}
-	}
+    public static boolean waitForCondition(int maxWaitTime, Condition condition) {
+        return waitForCondition(maxWaitTime, 100, condition);
+    }
 
-	/**
-	 * Find the substitution value for the key in the properties. If the
-	 * supplied properties are null, use the system properties.
-	 * 
-	 * @param key
-	 * @param props
-	 * @return
-	 */
-	protected static String findValue(final String key,
-			final Map<String, String> props) {
-		String value;
-		// check from the properties
-		if (props != null) {
-			value = props.get(key.toString());
-		} else {
-			value = System.getProperty(key);
-		}
-		if (value == null) {
-			// Check for a default value ${key:default}
-			int colon = key.indexOf(':');
-			if (colon > 0) {
-				String realKey = key.substring(0, colon);
-				if (props != null) {
-					value = props.get(realKey);
-				} else {
-					value = System.getProperty(realKey);
-				}
+    public static boolean waitForCondition(int maxWaitTime,
+                                           final int sleepTime,
+                                           Condition condition) {
+        long endTime = System.currentTimeMillis() + maxWaitTime;
+        while (System.currentTimeMillis() < endTime) {
+            if (condition.isTrue()) {
+                return true;
+            }
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException e) {
+                // do nothing
+            }
+        }
+        return false;
+    }
 
-				if (value == null) {
-					// Check for a composite key, "key1,key2"
-					value = resolveCompositeKey(realKey, props);
+    private static void addToZip(File root, File file, ZipOutputStream zos)
+                                                                           throws IOException {
+        zos.putNextEntry(new ZipEntry(
+                                      Utils.relativize(root,
+                                                       file.getAbsoluteFile()).getPath()));
+        if (file.isDirectory()) {
+            for (File child : file.listFiles()) {
+                addToZip(root, child, zos);
+            }
+        } else {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                copy(fis, zos);
+            }
+        }
+    }
 
-					// Not a composite key either, use the specified default
-					if (value == null) {
-						value = key.substring(colon + 1);
-					}
-				}
-			} else {
-				// No default, check for a composite key, "key1,key2"
-				value = resolveCompositeKey(key, props);
-			}
-		}
-		return value;
-	}
+    /**
+     * Transform the contents of the input stream, replacing any ${p} values in
+     * the stream with the value in the supplied properties. The transformed
+     * contents are placed in the supplied output file.
+     * 
+     * @param properties
+     * @param extensions
+     * @param is
+     * @param outFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    private static void transform(Map<String, String> properties,
+                                  Collection<String> extensions,
+                                  InputStream is, File outFile)
+                                                               throws FileNotFoundException,
+                                                               IOException {
+        File parent = outFile.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
 
-	/**
-	 * Try to resolve a "key" from the provided properties by checking if it is
-	 * actually a "key1,key2", in which case try first "key1", then "key2". If
-	 * all fails, return null.
-	 * 
-	 * It also accepts "key1," and ",key2".
-	 * 
-	 * @param key
-	 *            the key to resolve
-	 * @param props
-	 *            the properties to use
-	 * @return the resolved key or null
-	 */
-	protected static String resolveCompositeKey(final String key,
-			Map<String, String> props) {
-		String value = null;
+        try (FileOutputStream fos = new FileOutputStream(outFile);) {
+            if (extensions.contains(getExtension(outFile.getName()))) {
+                replaceProperties(is, fos, properties);
+            } else {
+                copy(is, fos);
+            }
+        }
+    }
 
-		// Look for the comma
-		int comma = key.indexOf(',');
-		if (comma > -1) {
-			// If we have a first part, try resolve it
-			if (comma > 0) {
-				// Check the first part
-				String key1 = key.substring(0, comma);
-				if (props != null) {
-					value = props.get(key1);
-				} else {
-					value = System.getProperty(key1);
-				}
-			}
-			// Check the second part, if there is one and first lookup failed
-			if (value == null && comma < key.length() - 1) {
-				String key2 = key.substring(comma + 1);
-				if (props != null) {
-					value = props.get(key2);
-				} else {
-					value = System.getProperty(key2);
-				}
-			}
-		}
-		// Return whatever we've found or null
-		return value;
-	}
+    /**
+     * Find the substitution value for the key in the properties. If the
+     * supplied properties are null, use the system properties.
+     * 
+     * @param key
+     * @param props
+     * @return
+     */
+    protected static String findValue(final String key,
+                                      final Map<String, String> props) {
+        String value;
+        // check from the properties
+        if (props != null) {
+            value = props.get(key.toString());
+        } else {
+            value = System.getProperty(key);
+        }
+        if (value == null) {
+            // Check for a default value ${key:default}
+            int colon = key.indexOf(':');
+            if (colon > 0) {
+                String realKey = key.substring(0, colon);
+                if (props != null) {
+                    value = props.get(realKey);
+                } else {
+                    value = System.getProperty(realKey);
+                }
+
+                if (value == null) {
+                    // Check for a composite key, "key1,key2"
+                    value = resolveCompositeKey(realKey, props);
+
+                    // Not a composite key either, use the specified default
+                    if (value == null) {
+                        value = key.substring(colon + 1);
+                    }
+                }
+            } else {
+                // No default, check for a composite key, "key1,key2"
+                value = resolveCompositeKey(key, props);
+            }
+        }
+        return value;
+    }
+
+    /**
+     * Try to resolve a "key" from the provided properties by checking if it is
+     * actually a "key1,key2", in which case try first "key1", then "key2". If
+     * all fails, return null.
+     * 
+     * It also accepts "key1," and ",key2".
+     * 
+     * @param key
+     *            the key to resolve
+     * @param props
+     *            the properties to use
+     * @return the resolved key or null
+     */
+    protected static String resolveCompositeKey(final String key,
+                                                Map<String, String> props) {
+        String value = null;
+
+        // Look for the comma
+        int comma = key.indexOf(',');
+        if (comma > -1) {
+            // If we have a first part, try resolve it
+            if (comma > 0) {
+                // Check the first part
+                String key1 = key.substring(0, comma);
+                if (props != null) {
+                    value = props.get(key1);
+                } else {
+                    value = System.getProperty(key1);
+                }
+            }
+            // Check the second part, if there is one and first lookup failed
+            if (value == null && comma < key.length() - 1) {
+                String key2 = key.substring(comma + 1);
+                if (props != null) {
+                    value = props.get(key2);
+                } else {
+                    value = System.getProperty(key2);
+                }
+            }
+        }
+        // Return whatever we've found or null
+        return value;
+    }
 }
