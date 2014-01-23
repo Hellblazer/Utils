@@ -304,28 +304,34 @@ public class Utils {
     /**
      * Create a zip from the contents of a directory.
      * 
-     * @param directory
+     * @param root
      *            - the root of the zip contents
      * @param os
      *            - the output stream to create the zip with
      * @throws IOException
      *             - if anything goes wrong
      */
-    public static void createZip(File directory, OutputStream os)
-                                                                 throws IOException {
-        if (!directory.isDirectory()) {
+    public static void createZip(File root, boolean includeRoot, OutputStream os)
+                                                                                 throws IOException {
+        if (!root.isDirectory()) {
             throw new IllegalArgumentException(
                                                String.format("%s is not a directory",
-                                                             directory));
+                                                             root));
         }
-        ZipOutputStream zos = new ZipOutputStream(os);
-        File[] files = directory.listFiles();
-        if (files != null) {
+        File directory = root.getAbsoluteFile();
 
+        ZipOutputStream zos = new ZipOutputStream(os);
+        if (includeRoot) {
+            String rootPath = root.getName();
+            if (!rootPath.endsWith("/")) {
+                rootPath += '/';
+            }
+            ZipEntry ze = new ZipEntry(rootPath);
+            zos.putNextEntry(ze);
+            directory = directory.getParentFile();
         }
-        File root = directory.getAbsoluteFile();
-        for (File file : directory.listFiles()) {
-            addToZip(root, file, zos);
+        for (File file : root.listFiles()) {
+            addToZip(directory, file, zos);
         }
         zos.finish();
         zos.flush();
@@ -729,9 +735,12 @@ public class Utils {
 
     private static void addToZip(File root, File file, ZipOutputStream zos)
                                                                            throws IOException {
-        zos.putNextEntry(new ZipEntry(
-                                      Utils.relativize(root,
-                                                       file.getAbsoluteFile()).getPath()));
+        String relativePath = Utils.relativize(root, file.getAbsoluteFile()).getPath();
+        if (file.isDirectory()) {
+            relativePath += '/';
+        }
+        ZipEntry ze = new ZipEntry(relativePath);
+        zos.putNextEntry(ze);
         if (file.isDirectory()) {
             for (File child : file.listFiles()) {
                 addToZip(root, child, zos);
