@@ -32,6 +32,8 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
@@ -429,6 +431,33 @@ public class Utils {
             ZipEntry ze = (ZipEntry) e.nextElement();
             copy(dest, zippy, ze, map, extensions);
         }
+    }
+
+    public static InetAddress getAddress(NetworkInterface iface) {
+        return getAddress(iface, true);
+    }
+
+    public static InetAddress getAddress(NetworkInterface iface,
+                                         boolean requireIPV4) {
+        InetAddress interfaceAddress = null;
+        for (InterfaceAddress address : iface.getInterfaceAddresses()) {
+            if (requireIPV4) {
+                if (address.getAddress().getAddress().length == 4) {
+                    interfaceAddress = address.getAddress();
+                    break;
+                }
+            } else {
+                interfaceAddress = address.getAddress();
+            }
+        }
+        if (interfaceAddress == null) {
+            throw new IllegalStateException(
+                                            String.format("Unable ot determine bound %s address for interface '%s'",
+                                                          requireIPV4 ? "IPV4"
+                                                                     : "IPV4/6",
+                                                          iface));
+        }
+        return interfaceAddress;
     }
 
     /**
