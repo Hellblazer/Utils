@@ -33,9 +33,11 @@ import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -739,6 +741,49 @@ public class Utils {
             }
         }
         writer.flush();
+    }
+
+    public static InputStream resolveResource(Class<?> base, String resource)
+                                                                             throws IOException {
+        try {
+            URL url = new URL(resource);
+            return url.openStream();
+        } catch (MalformedURLException e) {
+            Logger.getAnonymousLogger().fine(String.format("The resource is not a valid URL: %s\n Trying to find a corresponding file",
+                                                           resource));
+        } catch (IOException e) {
+            Logger.getAnonymousLogger().log(Level.WARNING,
+                                            String.format("Error reading resource from URL: %s : %s",
+                                                          resource,
+                                                          e.getMessage()));
+            throw e;
+        }
+        File configFile = new File(resource);
+        if (!configFile.exists()) {
+            Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
+                                                              resource));
+        } else if (configFile.isDirectory()) {
+            Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
+                                                              resource));
+        } else {
+            try (FileInputStream fis = new FileInputStream(configFile)) {
+                return fis;
+            } catch (FileNotFoundException e) {
+                // should never happen, as we've just checked that it exists, but it could have been deleted between these checks
+                Logger.getAnonymousLogger().log(Level.WARNING,
+                                                String.format("Cannot find resource file, but existed at one time %s",
+                                                              configFile.getAbsolutePath()),
+                                                e);
+                throw e;
+            }
+        }
+        InputStream is = base.getResourceAsStream(resource);
+        if (is == null) {
+            Logger.getAnonymousLogger().warning(String.format("Resource not resolved: %s",
+                                                              configFile.getAbsolutePath()));
+            throw new IOException();
+        }
+        return is;
     }
 
     public static boolean waitForCondition(int maxWaitTime, Condition condition) {
