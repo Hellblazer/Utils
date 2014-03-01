@@ -39,8 +39,7 @@ public class FdFactoryModule extends SimpleModule {
     @Override
     public void setupModule(SetupContext context) {
 
-        context.setMixInAnnotations(FailureDetectorFactory.class,
-                                    FdFactoryMixin.class);
+        setMixInAnnotation(FailureDetectorFactory.class, FdFactoryMixin.class);
         super.setupModule(context);
     }
 }
