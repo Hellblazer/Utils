@@ -205,6 +205,8 @@ public class MulticastTool {
                     sb.append(format.format(new Date()));
                     sb.append(" - ");
                     sb.append(packet.getAddress().getHostAddress());
+                    sb.append(':');
+                    sb.append(packet.getPort());
                     sb.append(" - ");
                     sb.append('\n');
                     sb.append(toHex(packet.getData(), packet.getOffset(),
