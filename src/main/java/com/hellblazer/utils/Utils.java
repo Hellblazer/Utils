@@ -17,6 +17,7 @@ package com.hellblazer.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -97,6 +98,25 @@ public class Utils {
         }
         field.setAccessible(true);
         return field.get(target);
+    }
+
+    public static void addToZip(File root, File file, ZipOutputStream zos)
+                                                                          throws IOException {
+        String relativePath = Utils.relativize(root, file.getAbsoluteFile()).getPath();
+        if (file.isDirectory()) {
+            relativePath += '/';
+        }
+        ZipEntry ze = new ZipEntry(relativePath);
+        zos.putNextEntry(ze);
+        if (file.isDirectory()) {
+            for (File child : file.listFiles()) {
+                addToZip(root, child, zos);
+            }
+        } else {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                copy(fis, zos);
+            }
+        }
     }
 
     /**
@@ -435,6 +455,51 @@ public class Utils {
         }
     }
 
+    /**
+     * Find the substitution value for the key in the properties. If the
+     * supplied properties are null, use the system properties.
+     * 
+     * @param key
+     * @param props
+     * @return
+     */
+    public static String findValue(final String key,
+                                   final Map<String, String> props) {
+        String value;
+        // check from the properties
+        if (props != null) {
+            value = props.get(key.toString());
+        } else {
+            value = System.getProperty(key);
+        }
+        if (value == null) {
+            // Check for a default value ${key:default}
+            int colon = key.indexOf(':');
+            if (colon > 0) {
+                String realKey = key.substring(0, colon);
+                if (props != null) {
+                    value = props.get(realKey);
+                } else {
+                    value = System.getProperty(realKey);
+                }
+
+                if (value == null) {
+                    // Check for a composite key, "key1,key2"
+                    value = resolveCompositeKey(realKey, props);
+
+                    // Not a composite key either, use the specified default
+                    if (value == null) {
+                        value = key.substring(colon + 1);
+                    }
+                }
+            } else {
+                // No default, check for a composite key, "key1,key2"
+                value = resolveCompositeKey(key, props);
+            }
+        }
+        return value;
+    }
+
     public static InetAddress getAddress(NetworkInterface iface) {
         return getAddress(iface, true);
     }
@@ -743,165 +808,6 @@ public class Utils {
         writer.flush();
     }
 
-    public static InputStream resolveResource(Class<?> base, String resource)
-                                                                             throws IOException {
-        try {
-            URL url = new URL(resource);
-            return url.openStream();
-        } catch (MalformedURLException e) {
-            Logger.getAnonymousLogger().fine(String.format("The resource is not a valid URL: %s\n Trying to find a corresponding file",
-                                                           resource));
-        } catch (IOException e) {
-            Logger.getAnonymousLogger().log(Level.WARNING,
-                                            String.format("Error reading resource from URL: %s : %s",
-                                                          resource,
-                                                          e.getMessage()));
-            throw e;
-        }
-        File configFile = new File(resource);
-        if (!configFile.exists()) {
-            Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
-                                                              resource));
-        } else if (configFile.isDirectory()) {
-            Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
-                                                              resource));
-        } else {
-            try (FileInputStream fis = new FileInputStream(configFile)) {
-                return fis;
-            } catch (FileNotFoundException e) {
-                // should never happen, as we've just checked that it exists, but it could have been deleted between these checks
-                Logger.getAnonymousLogger().log(Level.WARNING,
-                                                String.format("Cannot find resource file, but existed at one time %s",
-                                                              configFile.getAbsolutePath()),
-                                                e);
-                throw e;
-            }
-        }
-        InputStream is = base.getResourceAsStream(resource);
-        if (is == null) {
-            Logger.getAnonymousLogger().warning(String.format("Resource not resolved: %s",
-                                                              configFile.getAbsolutePath()));
-            throw new IOException();
-        }
-        return is;
-    }
-
-    public static boolean waitForCondition(int maxWaitTime, Condition condition) {
-        return waitForCondition(maxWaitTime, 100, condition);
-    }
-
-    public static boolean waitForCondition(int maxWaitTime,
-                                           final int sleepTime,
-                                           Condition condition) {
-        long endTime = System.currentTimeMillis() + maxWaitTime;
-        while (System.currentTimeMillis() < endTime) {
-            if (condition.isTrue()) {
-                return true;
-            }
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                // do nothing
-            }
-        }
-        return false;
-    }
-
-    private static void addToZip(File root, File file, ZipOutputStream zos)
-                                                                           throws IOException {
-        String relativePath = Utils.relativize(root, file.getAbsoluteFile()).getPath();
-        if (file.isDirectory()) {
-            relativePath += '/';
-        }
-        ZipEntry ze = new ZipEntry(relativePath);
-        zos.putNextEntry(ze);
-        if (file.isDirectory()) {
-            for (File child : file.listFiles()) {
-                addToZip(root, child, zos);
-            }
-        } else {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                copy(fis, zos);
-            }
-        }
-    }
-
-    /**
-     * Transform the contents of the input stream, replacing any ${p} values in
-     * the stream with the value in the supplied properties. The transformed
-     * contents are placed in the supplied output file.
-     * 
-     * @param properties
-     * @param extensions
-     * @param is
-     * @param outFile
-     * @throws FileNotFoundException
-     * @throws IOException
-     */
-    private static void transform(Map<String, String> properties,
-                                  Collection<String> extensions,
-                                  InputStream is, File outFile)
-                                                               throws FileNotFoundException,
-                                                               IOException {
-        File parent = outFile.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-
-        try (FileOutputStream fos = new FileOutputStream(outFile);) {
-            if (extensions.contains(getExtension(outFile.getName()))) {
-                replaceProperties(is, fos, properties);
-            } else {
-                copy(is, fos);
-            }
-        }
-    }
-
-    /**
-     * Find the substitution value for the key in the properties. If the
-     * supplied properties are null, use the system properties.
-     * 
-     * @param key
-     * @param props
-     * @return
-     */
-    protected static String findValue(final String key,
-                                      final Map<String, String> props) {
-        String value;
-        // check from the properties
-        if (props != null) {
-            value = props.get(key.toString());
-        } else {
-            value = System.getProperty(key);
-        }
-        if (value == null) {
-            // Check for a default value ${key:default}
-            int colon = key.indexOf(':');
-            if (colon > 0) {
-                String realKey = key.substring(0, colon);
-                if (props != null) {
-                    value = props.get(realKey);
-                } else {
-                    value = System.getProperty(realKey);
-                }
-
-                if (value == null) {
-                    // Check for a composite key, "key1,key2"
-                    value = resolveCompositeKey(realKey, props);
-
-                    // Not a composite key either, use the specified default
-                    if (value == null) {
-                        value = key.substring(colon + 1);
-                    }
-                }
-            } else {
-                // No default, check for a composite key, "key1,key2"
-                value = resolveCompositeKey(key, props);
-            }
-        }
-        return value;
-    }
-
     /**
      * Try to resolve a "key" from the provided properties by checking if it is
      * actually a "key1,key2", in which case try first "key1", then "key2". If
@@ -915,8 +821,8 @@ public class Utils {
      *            the properties to use
      * @return the resolved key or null
      */
-    protected static String resolveCompositeKey(final String key,
-                                                Map<String, String> props) {
+    public static String resolveCompositeKey(final String key,
+                                             Map<String, String> props) {
         String value = null;
 
         // Look for the comma
@@ -944,5 +850,147 @@ public class Utils {
         }
         // Return whatever we've found or null
         return value;
+    }
+
+    /**
+     * Resolve a resource. First see if the supplied resource is an URL. If so,
+     * open it and return the stream. If not, try for a file. If that exists and
+     * is not a directory, then return that stream. Finally, look for a
+     * classpath resource, relative to the supplied base class. If that exists,
+     * open the stream and return that. Otherwise, barf
+     * 
+     * @param base - the base class for resolving classpath resources - may be
+     *        null
+     * @param resource
+     *            - the resource to resolve
+     * @return the InputStream of the resolved resource
+     * @throws IOException
+     *             - if something gnarly happens, or we can't find your resource
+     */
+    public static InputStream resolveResource(Class<?> base, String resource)
+                                                                             throws IOException {
+        try {
+            URL url = new URL(resource);
+            return url.openStream();
+        } catch (MalformedURLException e) {
+            Logger.getAnonymousLogger().fine(String.format("The resource is not a valid URL: %s\n Trying to find a corresponding file",
+                                                           resource));
+        } catch (IOException e) {
+            Logger.getAnonymousLogger().log(Level.WARNING,
+                                            String.format("Error reading resource from URL: %s : %s",
+                                                          resource,
+                                                          e.getMessage()));
+            throw e;
+        }
+        File configFile = new File(resource);
+        if (!configFile.exists()) {
+            if (base == null) {
+                Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s",
+                                                                  resource));
+                throw new FileNotFoundException(
+                                                String.format("resource does not exist as a file: %s",
+                                                              resource));
+            }
+            Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
+                                                              resource));
+        } else if (configFile.isDirectory()) {
+            Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
+                                                              resource));
+        } else {
+            try (FileInputStream fis = new FileInputStream(configFile)) {
+                return fis;
+            } catch (FileNotFoundException e) {
+                // should never happen, as we've just checked that it exists, but it could have been deleted between these checks
+                Logger.getAnonymousLogger().log(Level.WARNING,
+                                                String.format("Cannot find resource file, but existed at one time %s",
+                                                              configFile.getAbsolutePath()),
+                                                e);
+                throw e;
+            }
+        }
+        InputStream is = base.getResourceAsStream(resource);
+        if (is == null) {
+            Logger.getAnonymousLogger().warning(String.format("Resource not resolved: %s",
+                                                              configFile.getAbsolutePath()));
+            throw new IOException();
+        }
+        return is;
+    }
+
+    /**
+     * Resolve a resource. Replace any ${foo} style properties in the resource
+     * with the supplied properties map. First see if the supplied resource is
+     * an URL. If so, open it and return the stream. If not, try for a file. If
+     * that exists and is not a directory, then return that stream. Finally,
+     * look for a classpath resource, relative to the supplied base class. If
+     * that exists, open the stream and return that. Otherwise, barf
+     * 
+     * @param base - the base class for resolving classpath resources - may be
+     *        null
+     * @param resource
+     *            - the resource to resolve
+     * @param properties
+     *            - the properties to replace in the resource stream
+     * @return the InputStream of the resolved resource
+     * @throws IOException
+     *             - if something gnarly happens, or we can't find your resource
+     */
+    public static InputStream resolveResource(Class<?> base, String resource,
+                                              Map<String, String> properties)
+                                                                             throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        replaceProperties(resolveResource(base, resource), baos, properties);
+        return new ByteArrayInputStream(baos.toByteArray());
+    }
+
+    /**
+     * Transform the contents of the input stream, replacing any ${p} values in
+     * the stream with the value in the supplied properties. The transformed
+     * contents are placed in the supplied output file.
+     * 
+     * @param properties
+     * @param extensions
+     * @param is
+     * @param outFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public static void transform(Map<String, String> properties,
+                                 Collection<String> extensions, InputStream is,
+                                 File outFile) throws FileNotFoundException,
+                                              IOException {
+        File parent = outFile.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(outFile);) {
+            if (extensions.contains(getExtension(outFile.getName()))) {
+                replaceProperties(is, fos, properties);
+            } else {
+                copy(is, fos);
+            }
+        }
+    }
+
+    public static boolean waitForCondition(int maxWaitTime, Condition condition) {
+        return waitForCondition(maxWaitTime, 100, condition);
+    }
+
+    public static boolean waitForCondition(int maxWaitTime,
+                                           final int sleepTime,
+                                           Condition condition) {
+        long endTime = System.currentTimeMillis() + maxWaitTime;
+        while (System.currentTimeMillis() < endTime) {
+            if (condition.isTrue()) {
+                return true;
+            }
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
+        return false;
     }
 }
