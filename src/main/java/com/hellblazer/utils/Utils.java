@@ -42,6 +42,7 @@ import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -551,11 +552,24 @@ public class Utils {
      *             - if we're boned
      */
     public static String getDocument(InputStream is) throws IOException {
+        return getDocument(is, new HashMap<String, String>());
+    }
+
+    /**
+     * Answer the string representation of the document
+     * 
+     * @param openStream
+     *            - ye olde stream
+     * @param - the replacement properties for the document
+     * @return the string the stream represents
+     * @throws IOException
+     *             - if we're boned
+     */
+    public static String getDocument(InputStream is,
+                                     Map<String, String> properties)
+                                                                    throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[16 * 1024];
-        for (int read = is.read(buffer); read > 0; read = is.read(buffer)) {
-            baos.write(buffer, 0, read);
-        }
+        replaceProperties(is, baos, properties);
         return baos.toString();
     }
 
