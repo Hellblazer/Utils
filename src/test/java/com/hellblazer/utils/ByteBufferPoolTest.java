@@ -14,7 +14,7 @@
  */
 package com.hellblazer.utils;
 
-import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.*;
 
 import java.nio.ByteBuffer;
 
@@ -81,4 +81,16 @@ public class ByteBufferPoolTest {
         assertEquals(1, test.getCreated());
         assertEquals(0, test.size());
     }
+
+	@Test
+	public void testDirect() {
+		ByteBufferPool test = new ByteBufferPool("test", 100, true);
+		ByteBuffer b = test.allocate(10);
+		assertTrue(b.isDirect());
+		assertTrue(test.isDirect());
+		test = new ByteBufferPool("test", 100, false);
+		b = test.allocate(10);
+		assertFalse(b.isDirect());
+		assertFalse(test.isDirect());
+	}
 }
