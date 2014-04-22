@@ -37,6 +37,7 @@ import java.net.InterfaceAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
@@ -600,6 +601,26 @@ public class Utils {
             return "";
         }
         return file.substring(index + 1);
+    }
+
+    public static NetworkInterface getInterface(String ifaceName)
+                                                                 throws SocketException {
+        if (ifaceName == null) {
+            NetworkInterface iface = NetworkInterface.getByIndex(1);
+            if (iface == null) {
+                throw new IllegalArgumentException(
+                                                   "Supplied ANY address for endpoint: %s with no networkInterface defined, cannot find network interface 1 ");
+            }
+            return iface;
+        } else {
+            NetworkInterface iface = NetworkInterface.getByName(ifaceName);
+            if (iface == null) {
+                throw new IllegalArgumentException(
+                                                   String.format("Cannot find network interface: %s ",
+                                                                 ifaceName));
+            }
+            return iface;
+        }
     }
 
     /**
