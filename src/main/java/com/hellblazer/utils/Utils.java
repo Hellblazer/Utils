@@ -45,6 +45,8 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -636,6 +638,25 @@ public class Utils {
             return "";
         }
         return name.substring(0, index);
+    }
+
+    /**
+     * Answer a property map read from the stream
+     * 
+     * @param is
+     *            - the stream containing the property map
+     * @return the Map of properties
+     * @throws IOException
+     */
+    public static Map<String, String> getProperties(InputStream is)
+                                                                   throws IOException {
+        Map<String, String> properties = new HashMap<>();
+        Properties props = new Properties();
+        props.load(is);
+        for (Entry<Object, Object> entry : props.entrySet()) {
+            properties.put((String) entry.getKey(), (String) entry.getValue());
+        }
+        return properties;
     }
 
     /**
