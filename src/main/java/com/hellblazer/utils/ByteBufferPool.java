@@ -35,10 +35,23 @@ public class ByteBufferPool {
     private final RingBuffer<ByteBuffer> pool;
     private int                          pooled         = 0;
     private int                          reused         = 0;
-
+	private final boolean				 direct;
+	
     public ByteBufferPool(String name, int limit) {
+		this(name, limit, false);
+    }
+
+	/**
+	 * Construct a new ByteBufferPool
+	 * 
+	 * @param name	the name of the pool
+	 * @param limit the max number of buffers (not bytes) to keep pooled.
+	 * @param direct, if true allocate direct buffers, otherwise regular buffers.
+	 */
+    public ByteBufferPool(String name, int limit, boolean direct) {
         this.name = name;
         pool = new RingBuffer<ByteBuffer>(limit);
+		this.direct = direct;
     }
 
     public ByteBuffer allocate(int capacity) {
@@ -46,9 +59,7 @@ public class ByteBufferPool {
         myLock.lock();
         try {
             if (pool.isEmpty()) {
-                created++;
-                bytesAllocated += capacity;
-                return ByteBuffer.allocate(capacity);
+				return createNewBuffer(capacity);
             }
             int remaining = pool.size();
             while (remaining != 0) {
@@ -62,14 +73,18 @@ public class ByteBufferPool {
                 pool.add(allocated);
                 remaining--;
             }
-            created++;
-            bytesAllocated += capacity;
-            return ByteBuffer.allocate(capacity);
+            return createNewBuffer(capacity);
         } finally {
             myLock.unlock();
         }
     }
 
+ 	protected ByteBuffer createNewBuffer(int capacity) {
+		created++;
+		bytesAllocated += capacity;
+		return direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+	}
+	
     public void free(ByteBuffer free) {
         final ReentrantLock myLock = lock;
         myLock.lock();
@@ -113,6 +128,11 @@ public class ByteBufferPool {
         return name;
     }
 
+	/** @return true if we are allocating direct buffers */
+	public boolean isDirect() {
+		return direct;
+	}
+	
     public int getPooled() {
         return pooled;
     }
