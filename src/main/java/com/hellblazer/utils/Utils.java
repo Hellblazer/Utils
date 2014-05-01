@@ -577,6 +577,25 @@ public class Utils {
     }
 
     /**
+     * Answer the string representation of the document
+     * 
+     * @param openStream
+     *            - ye olde stream
+     * @param - the replacement properties for the document
+     * @return the string the stream represents
+     * @throws IOException
+     *             - if we're boned
+     */
+    public static String getDocument(InputStream is, Properties properties)
+                                                                           throws IOException {
+        Map<String, String> props = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            props.put((String) entry.getKey(), (String) entry.getValue());
+        }
+        return getDocument(is, props);
+    }
+
+    /**
      * Answer the extension of the file
      * 
      * @param file
