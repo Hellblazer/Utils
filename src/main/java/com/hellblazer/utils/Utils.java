@@ -588,10 +588,7 @@ public class Utils {
      */
     public static String getDocument(InputStream is, Properties properties)
                                                                            throws IOException {
-        Map<String, String> props = new HashMap<>();
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            props.put((String) entry.getKey(), (String) entry.getValue());
-        }
+        Map<String, String> props = transform(properties);
         return getDocument(is, props);
     }
 
@@ -1019,6 +1016,30 @@ public class Utils {
     }
 
     /**
+     * Resolve a resource. Replace any ${foo} style properties in the resource
+     * with the supplied properties map. First see if the supplied resource is
+     * an URL. If so, open it and return the stream. If not, try for a file. If
+     * that exists and is not a directory, then return that stream. Finally,
+     * look for a classpath resource, relative to the supplied base class. If
+     * that exists, open the stream and return that. Otherwise, barf
+     * 
+     * @param base - the base class for resolving classpath resources - may be
+     *        null
+     * @param resource
+     *            - the resource to resolve
+     * @param properties
+     *            - the properties to replace in the resource stream
+     * @return the InputStream of the resolved resource
+     * @throws IOException
+     *             - if something gnarly happens, or we can't find your resource
+     */
+    public static InputStream resolveResource(Class<?> base, String resource,
+                                              Properties properties)
+                                                                    throws IOException {
+        return resolveResource(base, resource, transform(properties));
+    }
+
+    /**
      * Transform the contents of the input stream, replacing any ${p} values in
      * the stream with the value in the supplied properties. The transformed
      * contents are placed in the supplied output file.
@@ -1046,6 +1067,14 @@ public class Utils {
                 copy(is, fos);
             }
         }
+    }
+
+    public static Map<String, String> transform(Properties properties) {
+        Map<String, String> props = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            props.put((String) entry.getKey(), (String) entry.getValue());
+        }
+        return props;
     }
 
     public static boolean waitForCondition(int maxWaitTime, Condition condition) {
