@@ -16,10 +16,18 @@ include the hellblazer snapshot repository:
         <url>https://repository-hal900000.forge.cloudbees.com/snapshot/</url>
     </repository>
     
-add as dependency:
+add as dependency:(released version)
 
     <dependency>
         <groupId>com.hellblazer</groupId>
         <artifactId>utils</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.2</version>
+    </dependency>
+    
+add as dependency:(current version)
+
+    <dependency>
+        <groupId>com.hellblazer</groupId>
+        <artifactId>utils</artifactId>
+        <version>0.0.3-SNAPSHOT</version>
     </dependency>
