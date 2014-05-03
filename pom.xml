@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.hellblazer</groupId>
 	<artifactId>utils</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 	<name>Common Utilities</name>
 
 	<licenses>
@@ -25,11 +25,11 @@
 		<connection>git://github.com/Hellblazer/Utils.git</connection>
 		<url>https://github.com/Hellblazer/Utils</url>
 	</scm>
-    
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.resources.sourceEncoding>UTF-8</project.resources.sourceEncoding>
-    </properties>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.resources.sourceEncoding>UTF-8</project.resources.sourceEncoding>
+	</properties>
 
 	<build>
 		<plugins>
@@ -78,17 +78,5 @@
 			<version>4.10</version>
 			<scope>test</scope>
 		</dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>2.3.2</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.3.2</version>
-            <optional>true</optional>
-        </dependency>
 	</dependencies>
 </project>
