@@ -969,8 +969,8 @@ public class Utils {
             Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
                                                               resource));
         } else {
-            try (FileInputStream fis = new FileInputStream(configFile)) {
-                return fis;
+            try {
+                return new FileInputStream(configFile);
             } catch (FileNotFoundException e) {
                 // should never happen, as we've just checked that it exists, but it could have been deleted between these checks
                 Logger.getAnonymousLogger().log(Level.WARNING,
