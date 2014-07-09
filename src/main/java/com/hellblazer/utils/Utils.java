@@ -149,6 +149,29 @@ public class Utils {
         return -1;
     }
 
+    /**
+     * Clean the contents of a directory
+     * 
+     * @param directory
+     */
+    public static void clean(File directory) {
+        if (directory.exists()) {
+            if (directory.isDirectory()) {
+                for (File file : directory.listFiles()) {
+                    if (file.isDirectory()) {
+                        remove(file);
+                    } else {
+                        if (!file.delete()) {
+                            throw new IllegalStateException(
+                                                            String.format("Cannot delete [%s] ",
+                                                                          file));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public static void copy(File sourceFile, File destFile) throws IOException {
         copy(sourceFile, destFile, 4096);
     }
@@ -697,9 +720,9 @@ public class Utils {
      * @param directory
      */
     public static void initializeDirectory(File directory) {
-        remove(directory);
-        if (!directory.mkdirs()) {
-            throw new IllegalStateException("Cannot create directtory: "
+        clean(directory);
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw new IllegalStateException("Cannot create directory: "
                                             + directory);
         }
     }
