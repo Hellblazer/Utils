@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.hellblazer</groupId>
 	<artifactId>utils</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.3</version>
 	<name>Common Utilities</name>
 
 	<licenses>
@@ -17,13 +17,13 @@
 		<developer>
 			<name>Hal Hildebrand</name>
 			<email>hal.hildebrand@me.com</email>
-			<organization>Hellbound Productions</organization>
+			<organization>Chiral Behaviors</organization>
 		</developer>
 	</developers>
 
 	<scm>
-		<connection>git://github.com/Hellblazer/Utils.git</connection>
-		<url>https://github.com/Hellblazer/Utils</url>
+		<connection>git://github.com/ChiralBehaviors/Utils.git</connection>
+		<url>https://github.com/ChiralBehaviors/Utils</url>
 	</scm>
 
 	<properties>

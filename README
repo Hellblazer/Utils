@@ -21,7 +21,7 @@ add as dependency:(released version)
     <dependency>
         <groupId>com.hellblazer</groupId>
         <artifactId>utils</artifactId>
-        <version>0.0.2</version>
+        <version>0.0.3</version>
     </dependency>
     
 add as dependency:(current version)
@@ -29,5 +29,5 @@ add as dependency:(current version)
     <dependency>
         <groupId>com.hellblazer</groupId>
         <artifactId>utils</artifactId>
-        <version>0.0.3-SNAPSHOT</version>
+        <version>0.0.4-SNAPSHOT</version>
     </dependency>
