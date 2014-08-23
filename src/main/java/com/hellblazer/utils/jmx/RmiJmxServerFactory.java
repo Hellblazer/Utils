@@ -15,6 +15,7 @@
 package com.hellblazer.utils.jmx;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
@@ -30,9 +31,11 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
+import sun.management.ConnectorAddressLink;
 import sun.rmi.server.UnicastServerRef;
 import sun.rmi.server.UnicastServerRef2;
 
+import com.hellblazer.utils.Utils;
 import com.sun.jmx.remote.internal.RMIExporter;
 
 /**
@@ -43,6 +46,8 @@ import com.sun.jmx.remote.internal.RMIExporter;
  */
 @SuppressWarnings("restriction")
 public class RmiJmxServerFactory {
+    private static final String NO_PLACE_LIKE_HOME = "127.0.0.1";
+
     private static class Exporter implements RMIExporter {
         /**
          * <p>
@@ -105,6 +110,34 @@ public class RmiJmxServerFactory {
         JMXServiceURL url = new JMXServiceURL("rmi", jmxEndpoint.getHostName(),
                                               jmxEndpoint.getPort());
         return JMXConnectorServerFactory.newJMXConnectorServer(url, env, mbs);
+    }
+
+    /**
+     * Answer a server that can be contacted by knowing this process' pid. The
+     * server has already been started
+     * 
+     * @param mbs
+     * @return the started JMXConnectorServer
+     * @throws IOException
+     */
+    public static JMXConnectorServer startLocalJmxServer(MBeanServer mbs)
+                                                                         throws IOException {
+        JMXConnectorServer server;
+        // Ensure cryptographically strong random number generater used
+        // to choose the object number - see java.rmi.server.ObjID
+        System.setProperty("java.rmi.server.randomIDs", "true");
+        // Ensure that the rmi server socket binds to the localhost, rather than the translated IP address
+        System.setProperty("java.rmi.server.hostname", NO_PLACE_LIKE_HOME);
+
+        // This RMI server should not keep the VM alive
+        Map<String, RMIExporter> env = new HashMap<String, RMIExporter>();
+        env.put(RMIExporter.EXPORTER_ATTRIBUTE, new Exporter());
+        int port = Utils.allocatePort(InetAddress.getByName(NO_PLACE_LIKE_HOME));
+        JMXServiceURL url = new JMXServiceURL("rmi", NO_PLACE_LIKE_HOME, port);
+        server = JMXConnectorServerFactory.newJMXConnectorServer(url, env, mbs);
+        server.start();
+        ConnectorAddressLink.export(server.getAddress().toString());
+        return server;
     }
 
     private RmiJmxServerFactory() {

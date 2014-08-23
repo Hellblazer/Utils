@@ -133,7 +133,7 @@ public class Utils {
     }
 
     /**
-     * Find a free port on the interface with the given local address
+     * Find a free port on the interface with the given address
      * 
      * @return the port number or -1 if none available
      */
@@ -141,7 +141,6 @@ public class Utils {
         InetSocketAddress address = host == null ? new InetSocketAddress(0)
                                                 : new InetSocketAddress(host, 0);
         try (ServerSocket socket = new ServerSocket();) {
-
             socket.bind(address);
             return socket.getLocalPort();
         } catch (IOException e) {
