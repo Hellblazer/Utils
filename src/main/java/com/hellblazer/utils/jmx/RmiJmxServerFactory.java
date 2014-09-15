@@ -1,15 +1,15 @@
 /** (C) Copyright 2014 Hal Hildebrand, All Rights Reserved
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *     
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, 
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
- * See the License for the specific language governing permissions and 
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.hellblazer.utils.jmx;
@@ -17,12 +17,17 @@ package com.hellblazer.utils.jmx;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +35,12 @@ import javax.management.MBeanServer;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.management.remote.rmi.RMIConnectorServer;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
+import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import sun.management.ConnectorAddressLink;
 import sun.rmi.server.UnicastServerRef;
@@ -40,20 +51,18 @@ import com.sun.jmx.remote.internal.RMIExporter;
 
 /**
  * A simple factory for constructing rmi connector servers.
- * 
+ *
  * @author hhildebrand
- * 
+ *
  */
 @SuppressWarnings("restriction")
 public class RmiJmxServerFactory {
-    private static final String NO_PLACE_LIKE_HOME = "127.0.0.1";
-
     private static class Exporter implements RMIExporter {
         /**
          * <p>
          * Prevents our RMI server objects from keeping the JVM alive.
          * </p>
-         * 
+         *
          * <p>
          * We use a private interface in Sun's JMX Remote API implementation
          * that allows us to specify how to export RMI objects. We do so using
@@ -61,7 +70,7 @@ public class RmiJmxServerFactory {
          * non-portable, of course, so this is only valid because we are inside
          * Sun's JRE.
          * </p>
-         * 
+         *
          * <p>
          * Objects are exported using
          * {@link UnicastServerRef#exportObject(Remote, Object, boolean)}. The
@@ -96,6 +105,67 @@ public class RmiJmxServerFactory {
         }
     }
 
+    public static JMXConnectorServer construct(InetSocketAddress jmxEndpoint,
+                                               MBeanServer mbs,
+                                               Map<String, Object> env)
+                                                                       throws MalformedURLException,
+                                                                       IOException {
+        JMXServiceURL url = new JMXServiceURL("rmi", jmxEndpoint.getHostName(),
+                                              jmxEndpoint.getPort());
+        return JMXConnectorServerFactory.newJMXConnectorServer(url, env, mbs);
+    }
+
+    public static JMXConnectorServer construct(InetSocketAddress endpoint,
+                                               SSLContext sslContext,
+                                               boolean needClientAuth,
+                                               MBeanServer mbs)
+                                                               throws IOException {
+        return construct(endpoint, sslContext, null, null, needClientAuth, mbs);
+
+    }
+
+    public static JMXConnectorServer construct(InetSocketAddress endpoint,
+                                               SSLContext sslContext,
+                                               String[] enabledCipherSuites,
+                                               String[] enabledProtocols,
+                                               boolean needClientAuth,
+                                               MBeanServer mbs)
+                                                               throws IOException {
+        // Ensure cryptographically strong random number generator used
+        // to choose the object number - see java.rmi.server.ObjID
+        //
+        System.setProperty("java.rmi.server.randomIDs", "true");
+
+        HashMap<String, Object> env = new HashMap<String, Object>();
+        env.put(RMIExporter.EXPORTER_ATTRIBUTE, new Exporter());
+        env.put(RMIConnectorServer.RMI_CLIENT_SOCKET_FACTORY_ATTRIBUTE,
+                new SslRMIClientSocketFactory());
+        env.put(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE,
+                new SslRMIServerSocketFactory(sslContext, enabledCipherSuites,
+                                              enabledProtocols, needClientAuth));
+        return construct(endpoint, mbs, env);
+    }
+
+    public static JMXConnectorServer construct(InetSocketAddress endpoint,
+                                               String protocol,
+                                               SecureRandom random,
+                                               String provider,
+                                               TrustManager[] trustManagers,
+                                               KeyManager[] keyManagers,
+                                               String[] enabledCipherSuites,
+                                               String[] enabledProtocols,
+                                               boolean needClientAuth,
+                                               MBeanServer mbs)
+                                                               throws IOException,
+                                                               NoSuchAlgorithmException,
+                                                               NoSuchProviderException,
+                                                               KeyManagementException {
+        SSLContext context = SSLContext.getInstance(protocol, provider);
+        context.init(keyManagers, trustManagers, random);
+        return construct(endpoint, context, enabledCipherSuites,
+                         enabledProtocols, needClientAuth, mbs);
+    }
+
     public static JMXConnectorServer contruct(InetSocketAddress jmxEndpoint,
                                               MBeanServer mbs)
                                                               throws IOException {
@@ -105,17 +175,15 @@ public class RmiJmxServerFactory {
         System.setProperty("java.rmi.server.randomIDs", "true");
 
         // This RMI server should not keep the VM alive
-        Map<String, RMIExporter> env = new HashMap<String, RMIExporter>();
+        Map<String, Object> env = new HashMap<String, Object>();
         env.put(RMIExporter.EXPORTER_ATTRIBUTE, new Exporter());
-        JMXServiceURL url = new JMXServiceURL("rmi", jmxEndpoint.getHostName(),
-                                              jmxEndpoint.getPort());
-        return JMXConnectorServerFactory.newJMXConnectorServer(url, env, mbs);
+        return construct(jmxEndpoint, mbs, env);
     }
 
     /**
      * Answer a server that can be contacted by knowing this process' pid. The
      * server has already been started
-     * 
+     *
      * @param mbs
      * @return the started JMXConnectorServer
      * @throws IOException
@@ -139,6 +207,8 @@ public class RmiJmxServerFactory {
         ConnectorAddressLink.export(server.getAddress().toString());
         return server;
     }
+
+    private static final String NO_PLACE_LIKE_HOME = "127.0.0.1";
 
     private RmiJmxServerFactory() {
     }
