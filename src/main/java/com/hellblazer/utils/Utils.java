@@ -42,7 +42,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,6 +51,7 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -391,6 +391,41 @@ public class Utils {
      * Expand the zip resource into the destination, replacing any ${propName}
      * style properties with the corresponding values in the substitutions map
      * 
+     * @param is
+     *            - the zip input stream to expand
+     * @param extensions
+     *            - the list of file extensions targeted for property
+     *            substitution
+     * @param substitutions
+     *            - the map of substitutions
+     * @param destination
+     *            - the destination directory for the expansion
+     * 
+     * @throws IOException
+     * @throws ZipException
+     */
+    public static void expandAndReplace(InputStream is, File dest,
+                                        Map<String, String> substitutions,
+                                        Collection<String> extensions)
+                                                                      throws ZipException,
+                                                                      IOException {
+        initializeDirectory(dest);
+        if (!dest.exists() && !dest.mkdir()) {
+            throw new IOException(
+                                  String.format("Cannot create destination directory: %s",
+                                                dest.getAbsolutePath()));
+        }
+        ZipInputStream zis = new ZipInputStream(is);
+        ZipEntry ze = zis.getNextEntry();
+        while (ze != null) {
+            expandAndReplace(dest, zis, ze, substitutions, extensions);
+        }
+    }
+
+    /**
+     * Expand the zip resource into the destination, replacing any ${propName}
+     * style properties with the corresponding values in the substitutions map
+     * 
      * @param zip
      *            - the zip file to expand
      * @param extensions
@@ -409,17 +444,8 @@ public class Utils {
                                         Collection<String> extensions)
                                                                       throws ZipException,
                                                                       IOException {
-        initializeDirectory(dest);
-        if (!dest.exists() && !dest.mkdir()) {
-            throw new IOException(
-                                  String.format("Cannot create destination directory: %s",
-                                                dest.getAbsolutePath()));
-        }
-        ZipFile zippy = new ZipFile(zip);
-        Enumeration<?> e = zippy.entries();
-        while (e.hasMoreElements()) {
-            ZipEntry ze = (ZipEntry) e.nextElement();
-            expandAndReplace(dest, zippy, ze, substitutions, extensions);
+        try (InputStream is = new FileInputStream(zip)) {
+            expandAndReplace(is, dest, substitutions, extensions);
         }
     }
 
@@ -431,25 +457,42 @@ public class Utils {
      * System.getProperties()
      * 
      * @param dest
-     * @param zf
+     * @param zis
      * @param ze
      * @param extensions
      * @param properties
      * @throws IOException
      */
-    public static void expandAndReplace(File dest, ZipFile zf, ZipEntry ze,
+    public static void expandAndReplace(File dest, ZipInputStream zis,
+                                        ZipEntry ze,
                                         Map<String, String> properties,
                                         Collection<String> extensions)
                                                                       throws IOException {
-
-        try (InputStream is = zf.getInputStream(ze);) {
-            File outFile = new File(dest, ze.getName());
-            if (ze.isDirectory()) {
-                outFile.mkdirs();
-            } else {
-                transform(properties, extensions, is, outFile);
-            }
+        File outFile = new File(dest, ze.getName());
+        if (ze.isDirectory()) {
+            outFile.mkdirs();
+        } else {
+            transform(properties, extensions, zis, outFile);
         }
+    }
+
+    /**
+     * Provision the configured process directory from the zip resource
+     * 
+     * @param zip
+     * @param extensions
+     * @param map
+     * @param destination
+     * 
+     * @throws IOException
+     * @throws ZipException
+     */
+    public static void explode(InputStream is, File dest,
+                               Map<String, String> map,
+                               Collection<String> extensions)
+                                                             throws ZipException,
+                                                             IOException {
+
     }
 
     /**
@@ -467,18 +510,7 @@ public class Utils {
                                Collection<String> extensions)
                                                              throws ZipException,
                                                              IOException {
-        initializeDirectory(dest);
-        if (!dest.exists() && !dest.mkdir()) {
-            throw new IOException(
-                                  String.format("Cannot create destination directory: %s",
-                                                dest.getAbsolutePath()));
-        }
-        ZipFile zippy = new ZipFile(zip);
-        Enumeration<?> e = zippy.entries();
-        while (e.hasMoreElements()) {
-            ZipEntry ze = (ZipEntry) e.nextElement();
-            copy(dest, zippy, ze, map, extensions);
-        }
+        expandAndReplace(zip, dest, map, extensions);
     }
 
     /**
@@ -953,8 +985,9 @@ public class Utils {
      * classpath resource, relative to the supplied base class. If that exists,
      * open the stream and return that. Otherwise, barf
      * 
-     * @param base - the base class for resolving classpath resources - may be
-     *        null
+     * @param base
+     *            - the base class for resolving classpath resources - may be
+     *            null
      * @param resource
      *            - the resource to resolve
      * @return the InputStream of the resolved resource
@@ -1019,8 +1052,9 @@ public class Utils {
      * look for a classpath resource, relative to the supplied base class. If
      * that exists, open the stream and return that. Otherwise, barf
      * 
-     * @param base - the base class for resolving classpath resources - may be
-     *        null
+     * @param base
+     *            - the base class for resolving classpath resources - may be
+     *            null
      * @param resource
      *            - the resource to resolve
      * @param properties
@@ -1045,8 +1079,9 @@ public class Utils {
      * look for a classpath resource, relative to the supplied base class. If
      * that exists, open the stream and return that. Otherwise, barf
      * 
-     * @param base - the base class for resolving classpath resources - may be
-     *        null
+     * @param base
+     *            - the base class for resolving classpath resources - may be
+     *            null
      * @param resource
      *            - the resource to resolve
      * @param properties
