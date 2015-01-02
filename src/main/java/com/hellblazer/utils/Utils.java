@@ -15,6 +15,7 @@
  */
 package com.hellblazer.utils;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -223,8 +224,7 @@ public class Utils {
     public static void copy(File dest, ZipFile zf, ZipEntry ze,
                             Map<String, String> properties,
                             Collection<String> extensions) throws IOException {
-        InputStream is = zf.getInputStream(ze);
-        try {
+        try (InputStream is = zf.getInputStream(ze)) {
             File outFile = new File(dest, ze.getName());
             if (ze.isDirectory()) {
                 outFile.mkdirs();
@@ -233,27 +233,14 @@ public class Utils {
                 if (parent != null) {
                     parent.mkdirs();
                 }
-                FileOutputStream fos = new FileOutputStream(outFile);
-                try {
+
+                try (FileOutputStream fos = new FileOutputStream(outFile)) {
                     if (extensions.contains(getExtension(outFile.getName()))) {
                         replaceProperties(is, fos, properties);
                     } else {
                         copy(is, fos);
                     }
-                } finally {
-                    try {
-                        fos.close();
-                    } catch (IOException ioe) {
-                    }
                 }
-            }
-        } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                Logger.getAnonymousLogger().log(Level.FINE,
-                                                String.format("Error closing %s",
-                                                              ze), e);
             }
         }
     }
@@ -267,7 +254,7 @@ public class Utils {
      * @throws IOException
      */
     public static void copy(InputStream is, OutputStream os) throws IOException {
-        copy(is, os, 4096);
+        copy(is, os, 16 * 1024);
     }
 
     /**
@@ -409,7 +396,6 @@ public class Utils {
                                         Collection<String> extensions)
                                                                       throws ZipException,
                                                                       IOException {
-        initializeDirectory(dest);
         if (!dest.exists() && !dest.mkdir()) {
             throw new IOException(
                                   String.format("Cannot create destination directory: %s",
@@ -475,25 +461,6 @@ public class Utils {
         } else {
             transform(properties, extensions, zis, outFile);
         }
-    }
-
-    /**
-     * Provision the configured process directory from the zip resource
-     * 
-     * @param zip
-     * @param extensions
-     * @param map
-     * @param destination
-     * 
-     * @throws IOException
-     * @throws ZipException
-     */
-    public static void explode(InputStream is, File dest,
-                               Map<String, String> map,
-                               Collection<String> extensions)
-                                                             throws ZipException,
-                                                             IOException {
-
     }
 
     /**
