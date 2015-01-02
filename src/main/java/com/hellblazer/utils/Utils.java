@@ -419,6 +419,7 @@ public class Utils {
         ZipEntry ze = zis.getNextEntry();
         while (ze != null) {
             expandAndReplace(dest, zis, ze, substitutions, extensions);
+            ze = zis.getNextEntry();
         }
     }
 
