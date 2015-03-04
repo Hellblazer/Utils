@@ -46,6 +46,18 @@ public class RingBuffer<T> extends AbstractQueue<T> {
         return items[(index + head) % items.length];
     }
 
+    public void copy(T[] into, int from, int length, int to) {
+        if (length + from > size) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        int current = from;
+        int i = to;
+        int count = 0;
+        while (count++ < length) {
+            into[i++] = items[(current++ + head) % items.length];
+        }
+    }
+
     /* (non-Javadoc)
      * @see java.util.AbstractCollection#iterator()
      */
