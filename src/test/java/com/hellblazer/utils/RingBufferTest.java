@@ -54,6 +54,30 @@ public class RingBufferTest {
     }
 
     @Test
+    public void testAt() {
+        RingBuffer<Integer> test = new RingBuffer<>(1000);
+        for (int i = 0; i < 1000; i++) {
+            test.add(i);
+        }
+        for (int i = 0; i < 1000; i++) {
+            assertEquals(Integer.valueOf(i), test.at(i));
+        }
+    }
+
+    @Test
+    public void testIterate() {
+        RingBuffer<Integer> test = new RingBuffer<>(1000);
+        for (int i = 0; i < 1000; i++) {
+            test.add(i);
+        }
+        int i = 0;
+        for (Integer value : test) {
+            assertEquals(Integer.valueOf(i), value);
+            i++;
+        }
+    }
+
+    @Test
     public void testOffer() {
         RingBuffer<String> test = new RingBuffer<String>(1000);
         for (int i = 0; i < 1000; i++) {
