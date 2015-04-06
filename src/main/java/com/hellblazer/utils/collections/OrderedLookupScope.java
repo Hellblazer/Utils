@@ -15,52 +15,67 @@
  */
 package com.hellblazer.utils.collections;
 
+import java.util.List;
+
 /**
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  *
  */
-abstract public class LookupScope<Key, Value> {
-    private final String                  name;
-    private final LookupScope<Key, Value> parent;
+abstract public class OrderedLookupScope<Key, Value> extends
+        LookupScope<Key, Value> {
 
-    public LookupScope(String name, LookupScope<Key, Value> parent) {
-        this.name = name;
-        this.parent = parent;
+    private final List<LookupScope<Key, Value>> additional;
+
+    public OrderedLookupScope(String name, List<LookupScope<Key, Value>> imports) {
+        super(name, imports.size() == 0 ? null : imports.get(0));
+        additional = imports.subList(1, imports.size());
     }
 
     /**
-     * Lookup the key first in the reciver, then in the hierarchical scope of
-     * the parent
+     * Lookup the key in the hierarchical scope of the receiver, searching first
+     * in the receiver, then through the ordered list of parent scopes
      * 
      * @param key
      * @return the value associated with the key in the reciever scope, or null
      */
+    @Override
     public Value lookup(Key key) {
-        Value value = localLookup(key);
-        if (value == null && parent != null) {
-            return parent.lookup(key);
+        Value value = super.lookup(key);
+        if (value == null) {
+            for (LookupScope<Key, Value> c : additional) {
+                value = c.lookup(key);
+                if (value != null) {
+                    return value;
+                }
+            }
         }
         return null;
     }
 
     /**
      * Lookup the key in the named scope. The first scope found matching the
-     * name in a traversal of parents is used.
+     * name in a traversal of ordered parents is returned.
      * 
      * @param scope
      * @param key
      * @return the value associated with the key in the named scope, or null
      */
+    @Override
     public Value lookup(String scope, Key key) {
-        if (name != null && name.equals(scope)) {
-            return lookup(key);
+        Value value = super.lookup(scope, key);
+        if (value != null) {
+            return value;
         }
-        if (parent != null) {
-            return parent.lookup(scope, key);
+        for (LookupScope<Key, Value> c : additional) {
+            value = c.lookup(scope, key);
+            if (value != null) {
+                return value;
+            }
         }
         return null;
     }
 
+    @Override
     abstract protected Value localLookup(Key key);
 
 }
