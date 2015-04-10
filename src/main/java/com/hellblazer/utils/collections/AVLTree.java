@@ -14,42 +14,40 @@
  */
 package com.hellblazer.utils.collections;
 
-//import AVLNode;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 
 public class AVLTree<E> implements SortedCollection<E> {
     public class MyIterator implements Iterator<E> {
-        private ArrayList<E> _list;
-        private E            _next;
+        private ArrayList<E> list;
+        private E            next;
 
         public MyIterator(ArrayList<E> els) {
-            _next = null;
-            _list = els;
+            next = null;
+            list = els;
 
         }
 
         @Override
         public boolean hasNext() {
 
-            return !_list.isEmpty();
+            return !list.isEmpty();
         }
 
         @Override
         public E next() {
 
             if (hasNext()) {
-                _next = _list.remove(0);
-                return _next;
+                next = list.remove(0);
+                return next;
             }
             return null;
         }
 
         @Override
         public void remove() {
-            AVLTree.this.remove(_next);
+            AVLTree.this.remove(next);
 
         }
     }
@@ -60,23 +58,23 @@ public class AVLTree<E> implements SortedCollection<E> {
 
     /** The root of the Tree. */
 
-    private AVLNode<E>            _root;
+    private AVLNode<E>            root;
 
     /** Size of the Tree. */
 
-    private int                   _size = 0;
+    private int                   size = 0;
 
     /** The Traversal data member. */
 
-    private Traversal             _traversal;
+    private Traversal             traversal;
 
     /** ArrayList to hold the Elements. */
 
-    private ArrayList<E>          _myElements;
+    private ArrayList<E>          myElements;
 
     /** Comparator used to compare Items in the Tree.. */
 
-    private Comparator<? super E> _comp;
+    private Comparator<? super E> comp;
 
     boolean                       contains;
 
@@ -89,22 +87,22 @@ public class AVLTree<E> implements SortedCollection<E> {
      *            the AVLTree
      */
     public AVLTree(Comparator<? super E> comparator) {
-        _root = null;
+        root = null;
         if (comparator == null) {
             throw new NullPointerException("Invalid Comparator");
         }
-        _comp = comparator;
+        comp = comparator;
 
-        _traversal = Traversal.INORDER;
+        traversal = Traversal.INORDER;
     }
 
     /**
      * @param col
      */
     public AVLTree(SortedCollection<E> col) {
-        _traversal = Traversal.INORDER;
-        _size = col.size();
-        _comp = col.comparator();
+        traversal = Traversal.INORDER;
+        size = col.size();
+        comp = col.comparator();
         for (E element : col) {
             add(element);
         }
@@ -116,16 +114,10 @@ public class AVLTree<E> implements SortedCollection<E> {
         if (element == null) {
             throw new NullPointerException("Invalid element to be added.");
         }
-        insert(element, _root);
+        insert(element, root);
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seeoop.ex4.collection.SortedCollection#addAll(oop.ex4.collection.
-     * SortedCollection)
-     */
     @Override
     public void addAll(SortedCollection<? extends E> col) {
         if (col == null) {
@@ -139,13 +131,13 @@ public class AVLTree<E> implements SortedCollection<E> {
 
     @Override
     public Comparator<? super E> comparator() {
-        return this._comp;
+        return this.comp;
     }
 
     @Override
     public boolean contains(E element) {
         contains = false;
-        contains(new AVLNode<E>(element), _root);
+        contains(new AVLNode<E>(element), root);
 
         return contains;
     }
@@ -156,40 +148,17 @@ public class AVLTree<E> implements SortedCollection<E> {
             throw new NullPointerException(
                                            "Null Element Cannot be Stored in Tree's Nodes");
         }
-        if (_root == null) {
+        if (root == null) {
             throw new NullPointerException("Empty Tree.");
         }
         AVLNode<E> found = findNode(element);
-        return found == null ? null : found._data;
+        return found == null ? null : found.data;
     }
 
     @Override
     public E first() {
-        return min(_root)._data;
+        return min(root).data;
     }
-
-    // switch (_traversal) {
-    // case POSTORDER:
-    // postorder(_root);
-    // // return new myIterator<E>(Traversal.POSTORDER);
-    //
-    // case PREORDER:
-    // preorder(_root);
-    // // return new myIterator<E>(Traversal.PREORDER);
-    //
-    // case INORDER:
-    // inorder(_root);
-    // break;
-    // case BYLEVEL:
-    // bylevel(_root, 0, new ArrayList<ArrayList<E>>());
-    // // return new myIterator<E>(Traversal.BYLEVEL);
-    //
-    // default:
-    // inorder(_root);
-    // }
-    // return new myIterator(_traversal);
-    //
-    // }
 
     /**
      * Gets the traversal.
@@ -198,93 +167,93 @@ public class AVLTree<E> implements SortedCollection<E> {
      */
     public Traversal getTravel() {
 
-        return this._traversal;
+        return this.traversal;
     }
 
     public int height(AVLNode<E> t) {
-        return t == null ? -1 : t._height;
+        return t == null ? -1 : t.height;
     }
 
     @Override
     public boolean isEmpty() {
-        return _root == null;
+        return root == null;
     }
 
     @Override
     public Iterator<E> iterator() {
 
-        _myElements = new ArrayList<E>();
+        myElements = new ArrayList<E>();
 
-        switch (_traversal) {
+        switch (traversal) {
 
             case INORDER: {
-                inorder(_root);
-                return new MyIterator(_myElements);
+                inorder(root);
+                return new MyIterator(myElements);
             }
             case PREORDER: {
-                preorder(_root);
-                return new MyIterator(_myElements);
+                preorder(root);
+                return new MyIterator(myElements);
             }
             case POSTORDER: {
-                postorder(_root);
-                return new MyIterator(_myElements);
+                postorder(root);
+                return new MyIterator(myElements);
             }
             case BYLEVEL: {
-                bylevel(_root, 0, new ArrayList<ArrayList<E>>());
-                return new MyIterator(_myElements);
+                bylevel(root, 0, new ArrayList<ArrayList<E>>());
+                return new MyIterator(myElements);
             }
             default: {
-                inorder(_root);
-                return new MyIterator(_myElements);
+                inorder(root);
+                return new MyIterator(myElements);
             }
         }
     }
 
     @Override
     public E last() {
-        return max(_root)._data;
+        return max(root).data;
     }
 
     public AVLNode<E> remove(AVLNode<E> curr, E data) {
 
         if (curr != null) {
             if (curr.getData() == data) {
-                if (curr.getData() == null || curr._right == null) {
-                    AVLNode<E> temp = curr._right == null ? curr._left
-                                                         : curr._right;
+                if (curr.getData() == null || curr.right == null) {
+                    AVLNode<E> temp = curr.right == null ? curr.left
+                                                        : curr.right;
                     curr = null;
                     return temp;
                 }
-                AVLNode<E> heir = curr._left;
-                while (heir._right != null) {
-                    heir = heir._right;
+                AVLNode<E> heir = curr.left;
+                while (heir.right != null) {
+                    heir = heir.right;
                 }
-                curr._data = heir.getData();
+                curr.data = heir.getData();
                 data = heir.getData();
-                if (_comp.compare(data, curr.getData()) > 0) {
+                if (comp.compare(data, curr.getData()) > 0) {
 
-                    curr._right = remove(curr._right, data);
-                    if (getHeight(curr._right) - getHeight(curr._left) == -3) {
-                        if (getHeight(curr._left._left) <= getHeight(curr._left._right)) {
+                    curr.right = remove(curr.right, data);
+                    if (getHeight(curr.right) - getHeight(curr.left) == -3) {
+                        if (getHeight(curr.left.left) <= getHeight(curr.left.right)) {
                             curr = rotateWithLeftChild(curr);
                         } else {
                             curr = doubleWithLeftChild(curr);
                         }
                     } else {
-                        curr._height = Math.max(getHeight(curr._left),
-                                                getHeight(curr._right)) + 1;// 
+                        curr.height = Math.max(getHeight(curr.left),
+                                               getHeight(curr.right)) + 1;// 
                     }
-                } else if (_comp.compare(data, curr.getData()) <= 0) {
-                    curr._left = remove(curr._left, data);
-                    if (getHeight(curr._left) - getHeight(curr._left) == -3) {
-                        if (getHeight(curr._right._right) >= getHeight(curr._right._left)) {
+                } else if (comp.compare(data, curr.getData()) <= 0) {
+                    curr.left = remove(curr.left, data);
+                    if (getHeight(curr.left) - getHeight(curr.left) == -3) {
+                        if (getHeight(curr.right.right) >= getHeight(curr.right.left)) {
                             curr = rotateWithRightChild(curr);
                         } else {
                             curr = doubleWithRightChild(curr);
                         }
                     } else {
-                        curr._height = Math.max(getHeight(curr._left),
-                                                getHeight(curr._right)) + 1;
+                        curr.height = Math.max(getHeight(curr.left),
+                                               getHeight(curr.right)) + 1;
                     }
                 }
             }
@@ -298,7 +267,7 @@ public class AVLTree<E> implements SortedCollection<E> {
         if (element == null) {
             throw new IllegalArgumentException();
         }
-        remove(_root, element);
+        remove(root, element);
     }
 
     /**
@@ -308,25 +277,24 @@ public class AVLTree<E> implements SortedCollection<E> {
      */
     public void setTravel(Traversal traverser) {
 
-        _traversal = traverser;
+        traversal = traverser;
     }
 
     @Override
     public int size() {
-        return _size;
+        return size;
     }
 
     @Override
     public Iterable<E> subset(E from, E to) {
-        if (_comp.compare(from, to) >= 0) {
-            // System.out.println("%%%%%%%%%%%");
-            return new AVLTree<E>(_comp);
+        if (comp.compare(from, to) >= 0) {
+            return new AVLTree<E>(comp);
         }
-        AVLTree<E> tree = new AVLTree<E>(_comp);
+        AVLTree<E> tree = new AVLTree<E>(comp);
         Iterator<E> itr = this.iterator();
         while (itr.hasNext()) {
             E e = itr.next();
-            if (_comp.compare(from, e) <= 0 && _comp.compare(to, e) > 0) {
+            if (comp.compare(from, e) <= 0 && comp.compare(to, e) > 0) {
                 tree.add(e);
             }
         }
@@ -341,15 +309,15 @@ public class AVLTree<E> implements SortedCollection<E> {
         } catch (IndexOutOfBoundsException e) {
             listOfArrays.add(levelNodes = new ArrayList<E>());
         }
-        levelNodes.add(node._data);
+        levelNodes.add(node.data);
         level++;
-        if (node._left != null) {
-            bylevel(node._left, level, listOfArrays);
+        if (node.left != null) {
+            bylevel(node.left, level, listOfArrays);
         }
-        if (node._right != null) {
-            bylevel(node._right, level, listOfArrays);
+        if (node.right != null) {
+            bylevel(node.right, level, listOfArrays);
         }
-        if (node == _root) {
+        if (node == root) {
             for (ArrayList<E> nodeList : listOfArrays) {
                 for (E element : nodeList) {
                     add(element);
@@ -363,106 +331,92 @@ public class AVLTree<E> implements SortedCollection<E> {
         if (currentNode == null) {
             return;
         }
-        if (_comp.compare(currentNode._data, lookFor._data) == 0)
+        if (comp.compare(currentNode.data, lookFor.data) == 0)
 
         {
             contains = true;
             return;
-        } else if (_comp.compare(lookFor._data, currentNode._data) < 0)
+        } else if (comp.compare(lookFor.data, currentNode.data) < 0)
 
         {
-            contains(lookFor, currentNode._left);
+            contains(lookFor, currentNode.left);
         } else {
-            contains(lookFor, currentNode._right);
+            contains(lookFor, currentNode.right);
         }
         return;
     }
 
-    // insert function that insert anode in the tree and check the balance
-    // after insertion
-
     private AVLNode<E> doubleWithLeftChild(AVLNode<E> k3) {
-        k3._left = rotateWithRightChild(k3._left);
+        k3.left = rotateWithRightChild(k3.left);
         return rotateWithLeftChild(k3);
     }
 
     private AVLNode<E> doubleWithRightChild(AVLNode<E> k1) {
-        k1._right = rotateWithLeftChild(k1._right);
+        k1.right = rotateWithLeftChild(k1.right);
         return rotateWithRightChild(k1);
     }
 
     private AVLNode<E> findNode(E element) {
 
-        AVLNode<E> node = _root;
+        AVLNode<E> node = root;
         AVLNode<E> tmp = null;
 
         do {
-            int comarison = _comp.compare(element, node._data);
+            int comarison = comp.compare(element, node.data);
             if (comarison == 0) {
                 return node;
             }
             if (comarison >= 0) {
                 tmp = node;
-                node = node._right;
+                node = node.right;
             } else {
-                node = node._left;
+                node = node.left;
             }
 
         } while (node != null);
         return tmp != null ? tmp : null;
     }
 
-    // HEIGHT GETTER.
     private int getHeight(AVLNode<E> node) {
         if (node == null) {
             return -1;
         }
-        return node._height;
+        return node.height;
     }
 
-    // private void inorder(AVLNode<E> node) {
-    // if (node._left != null)
-    // inorder(node._left);
-    // add(node._data);
-    // if (node._right != null)
-    // inorder(node._right);
-    // }
     private void inorder(AVLNode<E> current) {
         if (current != null) {
-            inorder(current._left);
-            _myElements.add(current._data);
-            // System.out.print(current._element+", ");
-            inorder(current._right);
+            inorder(current.left);
+            myElements.add(current.data);
+            inorder(current.right);
         }
     }
 
     private AVLNode<E> insert(E x, AVLNode<E> t) {
         if (t == null) {
-            // this procedure do the insertion
             {
                 t = new AVLNode<E>(x);
-                t._parent = null;
+                t.parent = null;
             }
-            if (_size == 0) {
-                _root = t;
+            if (size == 0) {
+                root = t;
             }
-            _size++;
+            size++;
         }
-        // int compareResult = _comp.compare(x, t._data);
 
-        else if (_comp.compare(x, t._data) <= 0) {
-            t._left = insert(x, t._left);
-            if (getHeight(t._left) - getHeight(t._right) == 3) {
-                if (_comp.compare(x, t._left._data) < 0) {
+        else if (comp.compare(x, t.data) <= 0) {
+            t.left = insert(x, t.left);
+            if (getHeight(t.left) - getHeight(t.right) == 3) {
+                if (comp.compare(x, t.left.data) < 0) {
                     t = rotateWithLeftChild(t);
                 } else {
                     t = doubleWithLeftChild(t);
                 }
             }
-        } else if (_comp.compare(x, t._data) > 0) {
-            t._right = insert(x, t._right);
-            if (getHeight(t._right) - getHeight(t._left) == 3) {
-                if (_comp.compare(x, t._right._data) > 0) {
+        } else if (comp.compare(x, t.data) > 0) {
+            t.right = insert(x, t.right);
+            if (getHeight(t.right) - getHeight(t.left) == 3) {
+                if (comp.compare(x, t.right.data) > 0) {
                     t = rotateWithRightChild(t);
                 } else {
                     t = doubleWithRightChild(t);
@@ -470,7 +424,7 @@ public class AVLTree<E> implements SortedCollection<E> {
             }
         }
 
-        t._height = Math.max(getHeight(t._left), getHeight(t._right)) + 1;
+        t.height = Math.max(getHeight(t.left), getHeight(t.right)) + 1;
         return t;
     }
 
@@ -478,8 +432,8 @@ public class AVLTree<E> implements SortedCollection<E> {
         if (isEmpty() || node == null) {
             return null;
         }
-        while (node._right != null) {
-            node = node._right;
+        while (node.right != null) {
+            node = node.right;
         }
         return node;
     }
@@ -488,88 +442,81 @@ public class AVLTree<E> implements SortedCollection<E> {
         if (isEmpty() || node == null) {
             return null;
         }
-        while (node._left != null) {
-            node = node._left;
+        while (node.left != null) {
+            node = node.left;
         }
         return node;
     }
 
     private void postorder(AVLNode<E> node) {
         if (node != null) {
-            postorder(node._left);
+            postorder(node.left);
 
-            postorder(node._right);
-            _myElements.add(node._data);
+            postorder(node.right);
+            myElements.add(node.data);
         }
     }
 
     private void preorder(AVLNode<E> node) {
         if (node != null) {
-            _myElements.add(node._data);
+            myElements.add(node.data);
 
-            preorder(node._left);
+            preorder(node.left);
 
-            preorder(node._right);
+            preorder(node.right);
         }
     }
 
     private AVLNode<E> rotateWithLeftChild(AVLNode<E> k2) {
-        AVLNode<E> tempParent = k2._parent;
-        AVLNode<E> k1 = k2._left; // k2 will be in position of k1
+        AVLNode<E> tempParent = k2.parent;
+        AVLNode<E> k1 = k2.left; // k2 will be in position of k1
         {
-            if (tempParent != null && tempParent._left == k2) {
-                tempParent._left = k1;
-            } else if (tempParent != null && tempParent._right == k2) {
-                tempParent._right = k1;
+            if (tempParent != null && tempParent.left == k2) {
+                tempParent.left = k1;
+            } else if (tempParent != null && tempParent.right == k2) {
+                tempParent.right = k1;
             }
         }
-        k2._left = k1._right;
-        if (k1._right != null) {
-            k1._right._parent = k2;
+        k2.left = k1.right;
+        if (k1.right != null) {
+            k1.right.parent = k2;
         }
-        k1._right = k2;
-        k1._parent = k2._parent;
-        k2._parent = k1;
-        // set the height of the rearranged Nodes
-        k2._height = Math.max(getHeight(k2._left), getHeight(k2._right)) + 1;
-        k1._height = Math.max(getHeight(k1._left), k1._height) + 1;
-        if (k2 == _root) {
-            _root = k1; // if k1 was the root, k2 will be the route
+        k1.right = k2;
+        k1.parent = k2.parent;
+        k2.parent = k1;
+        k2.height = Math.max(getHeight(k2.left), getHeight(k2.right)) + 1;
+        k1.height = Math.max(getHeight(k1.left), k1.height) + 1;
+        if (k2 == root) {
+            root = k1;
         }
         return k1;
-        // AVLNode<E> k1 = k2._left;
-        // k2._left = k1._right;
-        // k1._right = k2;
-        // k2._height = Math.max(getHeight(k2._left), getHeight(k2._right)) + 1;
-        // k1._height = Math.max(getHeight(k1._left), k2._height) + 1;
-        // return k1;
     }
 
     private AVLNode<E> rotateWithRightChild(AVLNode<E> k1) {
 
-        AVLNode<E> tempParent = k1._parent;
-        AVLNode<E> k2 = k1._right;
-        k2._parent = tempParent;
+        AVLNode<E> tempParent = k1.parent;
+        AVLNode<E> k2 = k1.right;
+        k2.parent = tempParent;
 
         {
-            if (tempParent != null && tempParent._left == k1) {
-                tempParent._left = k2;
-            } else if (tempParent != null && tempParent._right == k1) {
-                tempParent._right = k2;
+            if (tempParent != null && tempParent.left == k1) {
+                tempParent.left = k2;
+            } else if (tempParent != null && tempParent.right == k1) {
+                tempParent.right = k2;
             }
         }
-        k1._right = k2._left;
-        if (k2._left != null) {
-            k2._left._parent = k1;
+        k1.right = k2.left;
+        if (k2.left != null) {
+            k2.left.parent = k1;
         }
 
-        k2._left = k1;
-        k1._parent = k2;
-        k1._height = Math.max(getHeight(k1._left), getHeight(k1._right)) + 1;
-        k2._height = Math.max(getHeight(k2._left), k1._height) + 1;
+        k2.left = k1;
+        k1.parent = k2;
+        k1.height = Math.max(getHeight(k1.left), getHeight(k1.right)) + 1;
+        k2.height = Math.max(getHeight(k2.left), k1.height) + 1;
 
-        if (k1 == _root) {
-            _root = k2;
+        if (k1 == root) {
+            root = k2;
         }
         return k2;
     }

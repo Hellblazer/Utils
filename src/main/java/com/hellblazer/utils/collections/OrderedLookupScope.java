@@ -27,7 +27,8 @@ abstract public class OrderedLookupScope<Key, Value> extends
     private final List<LookupScope<Key, Value>> additional;
 
     public OrderedLookupScope(String name, List<LookupScope<Key, Value>> imports) {
-        super(name, imports.size() == 0 ? null : imports.get(0));
+        super(name, (imports == null || imports.size() == 0) ? null
+                                                            : imports.get(0));
         additional = imports.subList(1, imports.size());
     }
 
