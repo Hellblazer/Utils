@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and 
  * limitations under the License.
  */
-package com.hellblazer.utils.collections;
+package com.hellblazer.utils;
 
 /**
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
@@ -52,6 +52,9 @@ abstract public class LookupScope<Key, Value> {
      * @return the value associated with the key in the named scope, or null
      */
     public Value lookup(String scope, Key key) {
+        if (scope == null) {
+            return lookup(key);
+        }
         if (name != null && name.equals(scope)) {
             return lookup(key);
         }
