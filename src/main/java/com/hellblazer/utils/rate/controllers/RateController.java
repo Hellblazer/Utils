@@ -25,8 +25,8 @@ import com.hellblazer.utils.rate.Predicate;
 
 /**
  * 
- * An implementation of ResponseTimeController that uses a direct adjustment of
- * queue thresholds based on the error in the target percentile (e.g. 90%, etc).
+ * An implementation of Controller that uses a direct adjustment of queue
+ * thresholds based on the error in the target percentile (e.g. 90%, etc).
  * 
  * @author hhildebrand
  * 
