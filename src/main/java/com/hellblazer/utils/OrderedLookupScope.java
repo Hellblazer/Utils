@@ -15,6 +15,7 @@
  */
 package com.hellblazer.utils;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,7 +30,11 @@ abstract public class OrderedLookupScope<Key, Value> extends
     public OrderedLookupScope(String name, List<LookupScope<Key, Value>> imports) {
         super(name, (imports == null || imports.size() == 0) ? null
                                                             : imports.get(0));
-        additional = imports.subList(1, imports.size());
+        if (imports == null) {
+            additional = Collections.emptyList();
+        } else {
+            additional = imports.subList(1, imports.size());
+        }
     }
 
     /**
