@@ -26,14 +26,12 @@ public interface Controller {
 
     /**
      * @param currentTime
-     *            TODO
      * @return true if a new element can be accepted, using the supplied cost
      */
     public abstract boolean accept(int cost, long currentTime);
 
     /**
      * @param currentTime
-     *            TODO
      * @return true if a new element can be accepted, using the default cost
      */
     public abstract boolean accept(long currentTime);
@@ -51,7 +49,6 @@ public interface Controller {
      * @param responseTime
      *            - the new sample
      * @param currentTime
-     *            TODO
      */
     public void sample(double responseTime, long currentTime);
 
