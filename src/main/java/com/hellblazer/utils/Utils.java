@@ -985,8 +985,8 @@ public class Utils {
                                                 String.format("resource does not exist as a file: %s",
                                                               resource));
             }
-            Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
-                                                              resource));
+            Logger.getAnonymousLogger().fine(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
+                                                           resource));
         } else if (configFile.isDirectory()) {
             Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
                                                               resource));
