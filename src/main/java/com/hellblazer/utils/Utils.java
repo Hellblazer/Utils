@@ -46,7 +46,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -65,16 +64,18 @@ public class Utils {
         BRACKET, DOLLAR, PASS_THROUGH
     }
 
-    public static Object accessField(String fieldName, Object target)
-                                                                     throws SecurityException,
-                                                                     NoSuchFieldException,
-                                                                     IllegalArgumentException,
-                                                                     IllegalAccessException {
+    public static Object accessField(String fieldName,
+                                     Object target) throws SecurityException,
+                                                    NoSuchFieldException,
+                                                    IllegalArgumentException,
+                                                    IllegalAccessException {
         Field field;
         try {
-            field = target.getClass().getDeclaredField(fieldName);
+            field = target.getClass()
+                          .getDeclaredField(fieldName);
         } catch (NoSuchFieldException e) {
-            Class<?> superClass = target.getClass().getSuperclass();
+            Class<?> superClass = target.getClass()
+                                        .getSuperclass();
             if (superClass == null) {
                 throw e;
             }
@@ -85,11 +86,10 @@ public class Utils {
     }
 
     public static Object accessField(String fieldName, Object target,
-                                     Class<?> targetClass)
-                                                          throws SecurityException,
-                                                          NoSuchFieldException,
-                                                          IllegalArgumentException,
-                                                          IllegalAccessException {
+                                     Class<?> targetClass) throws SecurityException,
+                                                           NoSuchFieldException,
+                                                           IllegalArgumentException,
+                                                           IllegalAccessException {
         Field field;
         try {
             field = targetClass.getDeclaredField(fieldName);
@@ -104,9 +104,10 @@ public class Utils {
         return field.get(target);
     }
 
-    public static void addToZip(File root, File file, ZipOutputStream zos)
-                                                                          throws IOException {
-        String relativePath = Utils.relativize(root, file.getAbsoluteFile()).getPath();
+    public static void addToZip(File root, File file,
+                                ZipOutputStream zos) throws IOException {
+        String relativePath = Utils.relativize(root, file.getAbsoluteFile())
+                                   .getPath();
         if (file.isDirectory()) {
             relativePath += '/';
         }
@@ -139,7 +140,8 @@ public class Utils {
      */
     public static int allocatePort(InetAddress host) {
         InetSocketAddress address = host == null ? new InetSocketAddress(0)
-                                                : new InetSocketAddress(host, 0);
+                                                 : new InetSocketAddress(host,
+                                                                         0);
         try (ServerSocket socket = new ServerSocket();) {
             socket.bind(address);
             return socket.getLocalPort();
@@ -161,8 +163,7 @@ public class Utils {
                         remove(file);
                     } else {
                         if (!file.delete()) {
-                            throw new IllegalStateException(
-                                                            String.format("Cannot delete [%s] ",
+                            throw new IllegalStateException(String.format("Cannot delete [%s] ",
                                                                           file));
                         }
                     }
@@ -184,8 +185,8 @@ public class Utils {
      * @param buffer
      * @throws IOException
      */
-    public static void copy(File sourceFile, File destFile, byte[] buffer)
-                                                                          throws IOException {
+    public static void copy(File sourceFile, File destFile,
+                            byte[] buffer) throws IOException {
         try (InputStream is = new FileInputStream(sourceFile);
                 OutputStream os = new FileOutputStream(destFile);) {
             copy(is, os, buffer);
@@ -201,8 +202,8 @@ public class Utils {
      * @param bufferSize
      * @throws IOException
      */
-    public static void copy(File sourceFile, File destFile, int bufferSize)
-                                                                           throws IOException {
+    public static void copy(File sourceFile, File destFile,
+                            int bufferSize) throws IOException {
         copy(sourceFile, destFile, new byte[bufferSize]);
     }
 
@@ -252,7 +253,8 @@ public class Utils {
      * @param os
      * @throws IOException
      */
-    public static void copy(InputStream is, OutputStream os) throws IOException {
+    public static void copy(InputStream is,
+                            OutputStream os) throws IOException {
         copy(is, os, 16 * 1024);
     }
 
@@ -268,8 +270,8 @@ public class Utils {
      *            - byte buffer to use
      * @throws IOException
      */
-    public static void copy(InputStream is, OutputStream os, byte[] buffer)
-                                                                           throws IOException {
+    public static void copy(InputStream is, OutputStream os,
+                            byte[] buffer) throws IOException {
         int len;
         while ((len = is.read(buffer)) > 0) {
             os.write(buffer, 0, len);
@@ -288,8 +290,8 @@ public class Utils {
      *            - buffer size to use
      * @throws IOException
      */
-    public static void copy(InputStream is, OutputStream os, int bufferSize)
-                                                                            throws IOException {
+    public static void copy(InputStream is, OutputStream os,
+                            int bufferSize) throws IOException {
         copy(is, os, new byte[bufferSize]);
     }
 
@@ -304,19 +306,17 @@ public class Utils {
      *            paths if does not exist
      * @throws IOException
      */
-    public static void copyDirectory(File sourceLocation, File targetLocation)
-                                                                              throws IOException {
+    public static void copyDirectory(File sourceLocation,
+                                     File targetLocation) throws IOException {
 
         if (sourceLocation.isDirectory()) {
             if (!targetLocation.exists()) {
                 if (!targetLocation.mkdirs()) {
-                    throw new IllegalArgumentException(
-                                                       String.format("Cannot create directory [%s]",
+                    throw new IllegalArgumentException(String.format("Cannot create directory [%s]",
                                                                      targetLocation.getAbsolutePath()));
                 }
             } else if (targetLocation.isFile()) {
-                throw new IllegalArgumentException(
-                                                   String.format("Target location must be a directory [%s]",
+                throw new IllegalArgumentException(String.format("Target location must be a directory [%s]",
                                                                  targetLocation.getAbsolutePath()));
             }
 
@@ -331,8 +331,7 @@ public class Utils {
                 }
             }
         } else {
-            throw new IllegalArgumentException(
-                                               String.format("[%s] is not a directory",
+            throw new IllegalArgumentException(String.format("[%s] is not a directory",
                                                              sourceLocation.getAbsolutePath()));
         }
     }
@@ -347,11 +346,10 @@ public class Utils {
      * @throws IOException
      *             - if anything goes wrong
      */
-    public static void createZip(File root, boolean includeRoot, OutputStream os)
-                                                                                 throws IOException {
+    public static void createZip(File root, boolean includeRoot,
+                                 OutputStream os) throws IOException {
         if (!root.isDirectory()) {
-            throw new IllegalArgumentException(
-                                               String.format("%s is not a directory",
+            throw new IllegalArgumentException(String.format("%s is not a directory",
                                                              root));
         }
         File directory = root.getAbsoluteFile();
@@ -377,41 +375,6 @@ public class Utils {
      * Expand the zip resource into the destination, replacing any ${propName}
      * style properties with the corresponding values in the substitutions map
      * 
-     * @param is
-     *            - the zip input stream to expand
-     * @param extensions
-     *            - the list of file extensions targeted for property
-     *            substitution
-     * @param substitutions
-     *            - the map of substitutions
-     * @param destination
-     *            - the destination directory for the expansion
-     * 
-     * @throws IOException
-     * @throws ZipException
-     */
-    public static void expandAndReplace(InputStream is, File dest,
-                                        Map<String, String> substitutions,
-                                        Collection<String> extensions)
-                                                                      throws ZipException,
-                                                                      IOException {
-        if (!dest.exists() && !dest.mkdir()) {
-            throw new IOException(
-                                  String.format("Cannot create destination directory: %s",
-                                                dest.getAbsolutePath()));
-        }
-        ZipInputStream zis = new ZipInputStream(is);
-        ZipEntry ze = zis.getNextEntry();
-        while (ze != null) {
-            expandAndReplace(dest, zis, ze, substitutions, extensions);
-            ze = zis.getNextEntry();
-        }
-    }
-
-    /**
-     * Expand the zip resource into the destination, replacing any ${propName}
-     * style properties with the corresponding values in the substitutions map
-     * 
      * @param zip
      *            - the zip file to expand
      * @param extensions
@@ -427,9 +390,8 @@ public class Utils {
      */
     public static void expandAndReplace(File zip, File dest,
                                         Map<String, String> substitutions,
-                                        Collection<String> extensions)
-                                                                      throws ZipException,
-                                                                      IOException {
+                                        Collection<String> extensions) throws ZipException,
+                                                                       IOException {
         try (InputStream is = new FileInputStream(zip)) {
             expandAndReplace(is, dest, substitutions, extensions);
         }
@@ -452,13 +414,45 @@ public class Utils {
     public static void expandAndReplace(File dest, ZipInputStream zis,
                                         ZipEntry ze,
                                         Map<String, String> properties,
-                                        Collection<String> extensions)
-                                                                      throws IOException {
+                                        Collection<String> extensions) throws IOException {
         File outFile = new File(dest, ze.getName());
         if (ze.isDirectory()) {
             outFile.mkdirs();
         } else {
             transform(properties, extensions, zis, outFile);
+        }
+    }
+
+    /**
+     * Expand the zip resource into the destination, replacing any ${propName}
+     * style properties with the corresponding values in the substitutions map
+     * 
+     * @param is
+     *            - the zip input stream to expand
+     * @param extensions
+     *            - the list of file extensions targeted for property
+     *            substitution
+     * @param substitutions
+     *            - the map of substitutions
+     * @param destination
+     *            - the destination directory for the expansion
+     * 
+     * @throws IOException
+     * @throws ZipException
+     */
+    public static void expandAndReplace(InputStream is, File dest,
+                                        Map<String, String> substitutions,
+                                        Collection<String> extensions) throws ZipException,
+                                                                       IOException {
+        if (!dest.exists() && !dest.mkdir()) {
+            throw new IOException(String.format("Cannot create destination directory: %s",
+                                                dest.getAbsolutePath()));
+        }
+        ZipInputStream zis = new ZipInputStream(is);
+        ZipEntry ze = zis.getNextEntry();
+        while (ze != null) {
+            expandAndReplace(dest, zis, ze, substitutions, extensions);
+            ze = zis.getNextEntry();
         }
     }
 
@@ -474,9 +468,8 @@ public class Utils {
      * @throws ZipException
      */
     public static void explode(File zip, File dest, Map<String, String> map,
-                               Collection<String> extensions)
-                                                             throws ZipException,
-                                                             IOException {
+                               Collection<String> extensions) throws ZipException,
+                                                              IOException {
         expandAndReplace(zip, dest, map, extensions);
     }
 
@@ -534,7 +527,8 @@ public class Utils {
         InetAddress interfaceAddress = null;
         for (InterfaceAddress address : iface.getInterfaceAddresses()) {
             if (requireIPV4) {
-                if (address.getAddress().getAddress().length == 4) {
+                if (address.getAddress()
+                           .getAddress().length == 4) {
                     interfaceAddress = address.getAddress();
                     break;
                 }
@@ -543,10 +537,9 @@ public class Utils {
             }
         }
         if (interfaceAddress == null) {
-            throw new IllegalStateException(
-                                            String.format("Unable ot determine bound %s address for interface '%s'",
+            throw new IllegalStateException(String.format("Unable ot determine bound %s address for interface '%s'",
                                                           requireIPV4 ? "IPV4"
-                                                                     : "IPV4/6",
+                                                                      : "IPV4/6",
                                                           iface));
         }
         return interfaceAddress;
@@ -584,14 +577,14 @@ public class Utils {
      * 
      * @param openStream
      *            - ye olde stream
-     * @param - the replacement properties for the document
+     * @param -
+     *            the replacement properties for the document
      * @return the string the stream represents
      * @throws IOException
      *             - if we're boned
      */
     public static String getDocument(InputStream is,
-                                     Map<String, String> properties)
-                                                                    throws IOException {
+                                     Map<String, String> properties) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         replaceProperties(is, baos, properties);
         return baos.toString();
@@ -602,13 +595,14 @@ public class Utils {
      * 
      * @param openStream
      *            - ye olde stream
-     * @param - the replacement properties for the document
+     * @param -
+     *            the replacement properties for the document
      * @return the string the stream represents
      * @throws IOException
      *             - if we're boned
      */
-    public static String getDocument(InputStream is, Properties properties)
-                                                                           throws IOException {
+    public static String getDocument(InputStream is,
+                                     Properties properties) throws IOException {
         Map<String, String> props = transform(properties);
         return getDocument(is, props);
     }
@@ -642,20 +636,17 @@ public class Utils {
         return file.substring(index + 1);
     }
 
-    public static NetworkInterface getInterface(String ifaceName)
-                                                                 throws SocketException {
+    public static NetworkInterface getInterface(String ifaceName) throws SocketException {
         if (ifaceName == null) {
             NetworkInterface iface = NetworkInterface.getByIndex(1);
             if (iface == null) {
-                throw new IllegalArgumentException(
-                                                   "Supplied ANY address for endpoint: %s with no networkInterface defined, cannot find network interface 1 ");
+                throw new IllegalArgumentException("Supplied ANY address for endpoint: %s with no networkInterface defined, cannot find network interface 1 ");
             }
             return iface;
         } else {
             NetworkInterface iface = NetworkInterface.getByName(ifaceName);
             if (iface == null) {
-                throw new IllegalArgumentException(
-                                                   String.format("Cannot find network interface: %s ",
+                throw new IllegalArgumentException(String.format("Cannot find network interface: %s ",
                                                                  ifaceName));
             }
             return iface;
@@ -685,8 +676,7 @@ public class Utils {
      * @return the Map of properties
      * @throws IOException
      */
-    public static Map<String, String> getProperties(InputStream is)
-                                                                   throws IOException {
+    public static Map<String, String> getProperties(InputStream is) throws IOException {
         Map<String, String> properties = new HashMap<>();
         Properties props = new Properties();
         props.load(is);
@@ -768,16 +758,14 @@ public class Utils {
                         remove(file);
                     } else {
                         if (!file.delete()) {
-                            throw new IllegalStateException(
-                                                            String.format("Cannot delete [%s] ",
+                            throw new IllegalStateException(String.format("Cannot delete [%s] ",
                                                                           file));
                         }
                     }
                 }
             }
             if (!directoryOrFile.delete()) {
-                throw new IllegalStateException(
-                                                String.format("Cannot delete [%s] ",
+                throw new IllegalStateException(String.format("Cannot delete [%s] ",
                                                               directoryOrFile));
             }
         }
@@ -805,8 +793,7 @@ public class Utils {
      * @throws IOException
      */
     public static void replaceProperties(File in, File out,
-                                         Map<String, String> props)
-                                                                   throws IOException {
+                                         Map<String, String> props) throws IOException {
         try (InputStream is = new FileInputStream(in);
                 OutputStream os = new FileOutputStream(out);) {
 
@@ -836,8 +823,7 @@ public class Utils {
      */
     public static void replaceProperties(final InputStream in,
                                          final OutputStream out,
-                                         final Map<String, String> props)
-                                                                         throws IOException {
+                                         final Map<String, String> props) throws IOException {
         Reader reader = new BufferedReader(new InputStreamReader(in));
         Writer writer = new BufferedWriter(new OutputStreamWriter(out));
         ParsingState state = ParsingState.PASS_THROUGH;
@@ -961,54 +947,9 @@ public class Utils {
      * @throws IOException
      *             - if something gnarly happens, or we can't find your resource
      */
-    public static InputStream resolveResource(Class<?> base, String resource)
-                                                                             throws IOException {
-        try {
-            URL url = new URL(resource);
-            return url.openStream();
-        } catch (MalformedURLException e) {
-            Logger.getAnonymousLogger().fine(String.format("The resource is not a valid URL: %s\n Trying to find a corresponding file",
-                                                           resource));
-        } catch (IOException e) {
-            Logger.getAnonymousLogger().log(Level.WARNING,
-                                            String.format("Error reading resource from URL: %s : %s",
-                                                          resource,
-                                                          e.getMessage()));
-            throw e;
-        }
-        File configFile = new File(resource);
-        if (!configFile.exists()) {
-            if (base == null) {
-                Logger.getAnonymousLogger().warning(String.format("resource does not exist as a file: %s",
-                                                                  resource));
-                throw new FileNotFoundException(
-                                                String.format("resource does not exist as a file: %s",
-                                                              resource));
-            }
-            Logger.getAnonymousLogger().info(String.format("resource does not exist as a file: %s\n Trying to find corresponding resource",
-                                                           resource));
-        } else if (configFile.isDirectory()) {
-            Logger.getAnonymousLogger().warning(String.format("resource is a directory: %s\n Trying to find corresponding resource",
-                                                              resource));
-        } else {
-            try {
-                return new FileInputStream(configFile);
-            } catch (FileNotFoundException e) {
-                // should never happen, as we've just checked that it exists, but it could have been deleted between these checks
-                Logger.getAnonymousLogger().log(Level.WARNING,
-                                                String.format("Cannot find resource file, but existed at one time %s",
-                                                              configFile.getAbsolutePath()),
-                                                e);
-                throw e;
-            }
-        }
-        InputStream is = base.getResourceAsStream(resource);
-        if (is == null) {
-            Logger.getAnonymousLogger().warning(String.format("Resource not resolved: %s",
-                                                              configFile.getAbsolutePath()));
-            throw new IOException();
-        }
-        return is;
+    public static InputStream resolveResource(Class<?> base,
+                                              String resource) throws IOException {
+        return resolveResourceURL(base, resource).openStream();
     }
 
     /**
@@ -1031,8 +972,7 @@ public class Utils {
      *             - if something gnarly happens, or we can't find your resource
      */
     public static InputStream resolveResource(Class<?> base, String resource,
-                                              Map<String, String> properties)
-                                                                             throws IOException {
+                                              Map<String, String> properties) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         replaceProperties(resolveResource(base, resource), baos, properties);
         return new ByteArrayInputStream(baos.toByteArray());
@@ -1058,9 +998,51 @@ public class Utils {
      *             - if something gnarly happens, or we can't find your resource
      */
     public static InputStream resolveResource(Class<?> base, String resource,
-                                              Properties properties)
-                                                                    throws IOException {
+                                              Properties properties) throws IOException {
         return resolveResource(base, resource, transform(properties));
+    }
+
+    /**
+     * Resolve a resource. First see if the supplied resource is an URL. If so,
+     * open it and return the stream. If not, try for a file. If that exists and
+     * is not a directory, then return that stream. Finally, look for a
+     * classpath resource, relative to the supplied base class. If that exists,
+     * open the stream and return that. Otherwise, barf
+     * 
+     * @param base
+     *            - the base class for resolving classpath resources - may be
+     *            null
+     * @param resource
+     *            - the resource to resolve
+     * @return the URL of the resolved resource
+     * @throws IOException
+     *             - if something gnarly happens, or we can't find your resource
+     */
+    public static URL resolveResourceURL(Class<?> base,
+                                         String resource) throws IOException {
+        try {
+            URL url = new URL(resource);
+            return url;
+        } catch (MalformedURLException e) {
+            Logger.getAnonymousLogger()
+                  .fine(String.format("The resource is not a valid URL: %s\n Trying to find a corresponding file",
+                                      resource));
+        }
+        File configFile = new File(resource);
+        if (!configFile.exists()) {
+            if (base == null) {
+                throw new FileNotFoundException(String.format("resource does not exist as a file: %s",
+                                                              resource));
+            }
+        } else if (configFile.isDirectory()) {
+            Logger.getAnonymousLogger()
+                  .fine(String.format("resource is a directory: %s\n Trying to find corresponding resource",
+                                      resource));
+        } else {
+            return configFile.toURI()
+                             .toURL();
+        }
+        return base.getResource(resource);
     }
 
     /**
@@ -1078,7 +1060,7 @@ public class Utils {
     public static void transform(Map<String, String> properties,
                                  Collection<String> extensions, InputStream is,
                                  File outFile) throws FileNotFoundException,
-                                              IOException {
+                                               IOException {
         File parent = outFile.getParentFile();
         if (parent != null) {
             parent.mkdirs();
@@ -1101,12 +1083,12 @@ public class Utils {
         return props;
     }
 
-    public static boolean waitForCondition(int maxWaitTime, Condition condition) {
+    public static boolean waitForCondition(int maxWaitTime,
+                                           Condition condition) {
         return waitForCondition(maxWaitTime, 100, condition);
     }
 
-    public static boolean waitForCondition(int maxWaitTime,
-                                           final int sleepTime,
+    public static boolean waitForCondition(int maxWaitTime, final int sleepTime,
                                            Condition condition) {
         long endTime = System.currentTimeMillis() + maxWaitTime;
         while (System.currentTimeMillis() < endTime) {
